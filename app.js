@@ -15,7 +15,8 @@ const SVG = {
   cabin:'<svg viewBox="0 0 24 24"><path d="M12 2C8 2 6 5 6 9v8a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V9c0-4-2-7-6-7zm0 2c2.5 0 4 2 4 5H8c0-3 1.5-5 4-5zM9 19a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm6 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>',
   book:'<svg viewBox="0 0 24 24"><path d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14V3H5zm0 2h12v12H5V5zm2 2v2h8V7H7zm0 4v2h8v-2H7z"/></svg>',
   tower:'<svg viewBox="0 0 24 24"><path d="M12 2c-1.1 0-2 .9-2 2 0 .74.4 1.38 1 1.72V8H8l1.2 12h1.85l-.4-4h2.7l-.4 4H15L16 8h-3V5.72c.6-.34 1-.98 1-1.72 0-1.1-.9-2-2-2zm-1.7 8h3.4l-.2 2h-3z"/></svg>',
-  shield:'<svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3zm-1 14-4-4 1.4-1.4L11 13.2l4.6-4.6L17 10l-6 6z"/></svg>'
+  shield:'<svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3zm-1 14-4-4 1.4-1.4L11 13.2l4.6-4.6L17 10l-6 6z"/></svg>',
+  brain:'<svg viewBox="0 0 24 24"><path d="M9 2a3 3 0 0 0-3 3 3 3 0 0 0-2 2.8A3 3 0 0 0 3 10.5 3 3 0 0 0 4.2 13 3 3 0 0 0 6 18a3 3 0 0 0 3 3c.9 0 1.7-.4 2.2-1V3.5A2.5 2.5 0 0 0 9 2zm6 0a2.5 2.5 0 0 0-2.2 1.5V20c.5.6 1.3 1 2.2 1a3 3 0 0 0 3-3 3 3 0 0 0 1.8-5A3 3 0 0 0 21 10.5a3 3 0 0 0-1-2.7A3 3 0 0 0 18 5a3 3 0 0 0-3-3z"/></svg>'
 };
 
 /* Пример матрицы рисков (5×5, ИКАО Doc 9859), отрисовка SVG */
@@ -124,6 +125,8 @@ function validateId(){
 /* ---------- Запуск ---------- */
 function buildList(cat){
   if(state.mode==='exam'){
+    // ЧФ — самостоятельный предмет: экзамен целиком из банка ЧФ, без общего блока СУБП
+    if(cat==='hf') return shuffle(QUESTIONS.hf).slice(0, EXAM_GENERAL+EXAM_SPECIAL);
     const spec=shuffle(QUESTIONS[cat]).slice(0,EXAM_SPECIAL);
     const gen=shuffle(QUESTIONS.general).slice(0,EXAM_GENERAL);
     return shuffle(spec.concat(gen));
