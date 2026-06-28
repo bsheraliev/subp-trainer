@@ -18,6 +18,36 @@ const SVG = {
   shield:'<svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3zm-1 14-4-4 1.4-1.4L11 13.2l4.6-4.6L17 10l-6 6z"/></svg>'
 };
 
+/* Пример матрицы рисков (5×5, ИКАО Doc 9859), отрисовка SVG */
+const MTX_FILL=['#e2574d','#e0a02a','#1fae84'];
+const MTX_COL=[[0,0,0,1,1],[0,0,1,1,2],[0,1,1,2,2],[1,1,2,2,2],[1,2,2,2,2]];
+const MTX_LIK=[['5','Частый'],['4','Случайн.'],['3','Маловер.'],['2','Редкий'],['1','Крайне р.']];
+const MTX_SEV=[['A','Катастр.'],['B','Опасная'],['C','Серьёзн.'],['D','Незнач.'],['E','Ничтож.']];
+function matrixSVG(){
+  var gx=96, gy=50, cw=50, ch=40, W=gx+5*cw+6, cells='', sev='', lik='';
+  for(var r=0;r<5;r++){ for(var c=0;c<5;c++){
+    var x=gx+c*cw, y=gy+r*ch;
+    cells+='<rect x="'+(x+1)+'" y="'+(y+1)+'" width="'+(cw-2)+'" height="'+(ch-2)+'" rx="3" fill="'+MTX_FILL[MTX_COL[r][c]]+'"/>'
+      +'<text x="'+(x+cw/2)+'" y="'+(y+ch/2+4)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#10201b">'+MTX_LIK[r][0]+MTX_SEV[c][0]+'</text>';
+  }}
+  for(var c2=0;c2<5;c2++){ var cx=gx+c2*cw+cw/2;
+    sev+='<text x="'+cx+'" y="28" text-anchor="middle" font-size="13" font-weight="700" fill="#eaf3ef">'+MTX_SEV[c2][0]+'</text>'
+      +'<text x="'+cx+'" y="42" text-anchor="middle" font-size="7.5" fill="#9fb8b0">'+MTX_SEV[c2][1]+'</text>'; }
+  for(var r2=0;r2<5;r2++){ var cy=gy+r2*ch+ch/2;
+    lik+='<text x="8" y="'+(cy-2)+'" font-size="13" font-weight="700" fill="#eaf3ef">'+MTX_LIK[r2][0]+'</text>'
+      +'<text x="22" y="'+(cy+2)+'" font-size="7.5" fill="#9fb8b0">'+MTX_LIK[r2][1]+'</text>'; }
+  var H=gy+5*ch+34, ly=gy+5*ch+20;
+  var leg='<g font-size="8" fill="#9fb8b0">'
+    +'<rect x="'+gx+'" y="'+(ly-8)+'" width="10" height="10" rx="2" fill="#e2574d"/><text x="'+(gx+13)+'" y="'+ly+'">Недопустимый</text>'
+    +'<rect x="'+(gx+95)+'" y="'+(ly-8)+'" width="10" height="10" rx="2" fill="#e0a02a"/><text x="'+(gx+108)+'" y="'+ly+'">Допустимый</text>'
+    +'<rect x="'+(gx+180)+'" y="'+(ly-8)+'" width="10" height="10" rx="2" fill="#1fae84"/><text x="'+(gx+193)+'" y="'+ly+'">Приемлемый</text></g>';
+  var cap='<text x="'+(gx+5*cw/2)+'" y="12" text-anchor="middle" font-size="8.5" fill="#9fb8b0">Серьёзность последствий →</text>'
+    +'<text x="6" y="44" font-size="7.5" fill="#9fb8b0">Вер.↓</text>';
+  return '<div style="margin-top:10px"><div style="font-size:12px;color:var(--muted);margin-bottom:4px">Пример матрицы рисков (ИКАО Doc 9859):</div>'
+    +'<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:340px;height:auto;display:block;background:#0e1b17;border-radius:8px;padding:4px" xmlns="http://www.w3.org/2000/svg">'
+    +cap+sev+lik+cells+leg+'</svg></div>';
+}
+
 const KEYS = ['А','Б','В','Г','Д'];
 const state = { mode:'train', cat:null, name:'', unit:'',
   list:[], i:0, correct:0, answered:false, wrong:[],
@@ -144,6 +174,7 @@ function answer(btn,chosen,q){
   const ex=$('#q-expl'); ex.className='expl '+(ok?'ok':'bad');
   ex.innerHTML='<div class="tag">'+(ok?'✓ Верно':'✕ Неверно')+'</div>'+
     (ok?'':'<p style="margin-bottom:6px">Правильный ответ: <b>'+q.o[q.a]+'</b></p>')+'<p>'+q.e+'</p>';
+  if(q.img==='matrix') ex.insertAdjacentHTML('beforeend', matrixSVG());
   ex.classList.remove('hidden');
   $('#q-score').innerHTML='<b>'+state.correct+'</b> верно';
   $('#q-bar').style.width=((state.i+1)/state.list.length*100)+'%';
