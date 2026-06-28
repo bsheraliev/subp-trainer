@@ -21,10 +21,10 @@ const SVG = {
 /* Пример матрицы рисков (5×5, ИКАО Doc 9859), отрисовка SVG */
 const MTX_FILL=['#e2574d','#e0a02a','#1fae84'];
 const MTX_COL=[[0,0,0,1,1],[0,0,1,1,2],[0,1,1,2,2],[1,1,2,2,2],[1,2,2,2,2]];
-const MTX_LIK=[['5','Частый'],['4','Случайн.'],['3','Маловер.'],['2','Редкий'],['1','Крайне р.']];
+const MTX_LIK=[['5','Частый','часто, много раз'],['4','Случайн.','иногда'],['3','Маловер.','редко'],['2','Редкий','очень редко'],['1','Крайне р.','почти никогда']];
 const MTX_SEV=[['A','Катастр.'],['B','Опасная'],['C','Серьёзн.'],['D','Незнач.'],['E','Ничтож.']];
 function matrixSVG(){
-  var gx=96, gy=50, cw=50, ch=40, W=gx+5*cw+6, cells='', sev='', lik='';
+  var gx=112, gy=50, cw=48, ch=42, W=gx+5*cw+6, cells='', sev='', lik='';
   for(var r=0;r<5;r++){ for(var c=0;c<5;c++){
     var x=gx+c*cw, y=gy+r*ch;
     cells+='<rect x="'+(x+1)+'" y="'+(y+1)+'" width="'+(cw-2)+'" height="'+(ch-2)+'" rx="3" fill="'+MTX_FILL[MTX_COL[r][c]]+'"/>'
@@ -34,8 +34,9 @@ function matrixSVG(){
     sev+='<text x="'+cx+'" y="28" text-anchor="middle" font-size="13" font-weight="700" fill="#eaf3ef">'+MTX_SEV[c2][0]+'</text>'
       +'<text x="'+cx+'" y="42" text-anchor="middle" font-size="7.5" fill="#9fb8b0">'+MTX_SEV[c2][1]+'</text>'; }
   for(var r2=0;r2<5;r2++){ var cy=gy+r2*ch+ch/2;
-    lik+='<text x="8" y="'+(cy-2)+'" font-size="13" font-weight="700" fill="#eaf3ef">'+MTX_LIK[r2][0]+'</text>'
-      +'<text x="22" y="'+(cy+2)+'" font-size="7.5" fill="#9fb8b0">'+MTX_LIK[r2][1]+'</text>'; }
+    lik+='<text x="6" y="'+(cy+4)+'" font-size="13" font-weight="700" fill="#eaf3ef">'+MTX_LIK[r2][0]+'</text>'
+      +'<text x="22" y="'+(cy-3)+'" font-size="7.5" fill="#9fb8b0">'+MTX_LIK[r2][1]+'</text>'
+      +'<text x="22" y="'+(cy+8)+'" font-size="6.5" fill="#6f8a82">'+MTX_LIK[r2][2]+'</text>'; }
   var H=gy+5*ch+34, ly=gy+5*ch+20;
   var leg='<g font-size="8" fill="#9fb8b0">'
     +'<rect x="'+gx+'" y="'+(ly-8)+'" width="10" height="10" rx="2" fill="#e2574d"/><text x="'+(gx+13)+'" y="'+ly+'">Недопустимый</text>'
@@ -44,7 +45,7 @@ function matrixSVG(){
   var cap='<text x="'+(gx+5*cw/2)+'" y="12" text-anchor="middle" font-size="8.5" fill="#9fb8b0">Серьёзность последствий →</text>'
     +'<text x="6" y="44" font-size="7.5" fill="#9fb8b0">Вер.↓</text>';
   return '<div style="margin-top:10px"><div style="font-size:12px;color:var(--muted);margin-bottom:4px">Пример матрицы рисков (ИКАО Doc 9859):</div>'
-    +'<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:340px;height:auto;display:block;background:#0e1b17;border-radius:8px;padding:4px" xmlns="http://www.w3.org/2000/svg">'
+    +'<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:380px;height:auto;display:block;background:#0e1b17;border-radius:8px;padding:4px" xmlns="http://www.w3.org/2000/svg">'
     +cap+sev+lik+cells+leg+'</svg></div>';
 }
 
