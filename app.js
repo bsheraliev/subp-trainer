@@ -21,7 +21,7 @@ const SVG = {
 /* Пример матрицы рисков (5×5, ИКАО Doc 9859), отрисовка SVG */
 const MTX_FILL=['#e2574d','#e0a02a','#1fae84'];
 const MTX_COL=[[0,0,0,1,1],[0,0,1,1,2],[0,1,1,2,2],[1,1,2,2,2],[1,2,2,2,2]];
-const MTX_LIK=[['5','Частый','часто, много раз'],['4','Случайн.','иногда'],['3','Маловер.','редко'],['2','Редкий','очень редко'],['1','Крайне р.','почти никогда']];
+const MTX_LIK=[['5','Частый','>1 раза/нед'],['4','Случайн.','≈1 раз/мес'],['3','Маловер.','≈1 раз/год'],['2','Редкий','≈1 раз/10 лет'],['1','Крайне р.','<1 раза/100 л']];
 const MTX_SEV=[['A','Катастр.'],['B','Опасная'],['C','Серьёзн.'],['D','Незнач.'],['E','Ничтож.']];
 function matrixSVG(){
   var gx=112, gy=50, cw=48, ch=42, W=gx+5*cw+6, cells='', sev='', lik='';
@@ -46,7 +46,8 @@ function matrixSVG(){
     +'<text x="6" y="44" font-size="7.5" fill="#9fb8b0">Вер.↓</text>';
   return '<div style="margin-top:10px"><div style="font-size:12px;color:var(--muted);margin-bottom:4px">Пример матрицы рисков (ИКАО Doc 9859):</div>'
     +'<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:380px;height:auto;display:block;background:#0e1b17;border-radius:8px;padding:4px" xmlns="http://www.w3.org/2000/svg">'
-    +cap+sev+lik+cells+leg+'</svg></div>';
+    +cap+sev+lik+cells+leg+'</svg>'
+    +'<div style="font-size:11.5px;color:var(--muted);margin-top:7px;line-height:1.45">Пример: вероятность «Случайный» (4) × серьёзность «Катастрофическая» (A) → <b style="color:var(--txt)">4A</b> → недопустимый риск.<br>Числа частоты — пример; точные значения задаёт организация в руководстве по СУБП.</div></div>';
 }
 
 const KEYS = ['А','Б','В','Г','Д'];
