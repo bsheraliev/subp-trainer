@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Тренажёр СУБП</title>
+<title>Авиатренажёр · СУБП и Человеческий фактор</title>
 <meta name="theme-color" content="#0e1b17">
 <meta name="description" content="Тренажёр по СУБП (системе управления безопасностью полётов) для авиационного персонала. ИКАО Приложение 19, Doc 9859.">
 <link rel="manifest" href="manifest.webmanifest">
@@ -17,21 +17,28 @@
   <header class="top">
     <span class="brand">
       <span class="logo"><svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3zm-1 14-4-4 1.4-1.4L11 13.2l4.6-4.6L17 10l-6 6z"/></svg></span>
-      <span>Тренажёр&nbsp;СУБП<br><span class="sub">Безопасность полётов · ИКАО</span></span>
+      <span><span id="brand-title">Авиатренажёр</span><br><span class="sub" id="brand-sub">СУБП · Человеческий фактор</span></span>
     </span>
     <span class="spacer"></span>
     <button id="btn-home" class="ghost-btn hidden">← Меню</button>
   </header>
 
+  <!-- ЭКРАН ВЫБОРА ПРЕДМЕТА -->
+  <main id="screen-subj">
+    <p class="lead">Выберите предмет тестирования.</p>
+    <div id="subjects"></div>
+    <button id="subj-log" class="btn sec">📋 Журнал прохождений</button>
+  </main>
+
   <!-- ГЛАВНЫЙ ЭКРАН -->
-  <main id="screen-home">
-    <p class="lead">Подготовка авиаперсонала по Системе управления безопасностью полётов. Выберите режим и свою категорию.</p>
+  <main id="screen-home" class="hidden">
+    <p class="lead" id="lead-home"></p>
     <div class="modes">
       <button id="mode-train" class="on">Тренажёр</button>
       <button id="mode-exam">Экзамен</button>
     </div>
     <p id="mode-hint" class="mode-hint"></p>
-    <div class="section-title">Категория персонала</div>
+    <div class="section-title" id="sec-title">Категория персонала</div>
     <div id="cats"></div>
     <button id="open-log" class="btn sec">📋 Журнал прохождений</button>
   </main>
@@ -82,7 +89,7 @@
     <div id="cert" class="cert hidden">
       <div class="cert-head">
         <div class="cert-logo"><svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3zm-1 14-4-4 1.4-1.4L11 13.2l4.6-4.6L17 10l-6 6z"/></svg></div>
-        <div><div class="cert-title">Справка о прохождении</div><div class="cert-org">Тестирование по СУБП · ИКАО Прил. 19</div></div>
+        <div><div class="cert-title">Справка о прохождении</div><div class="cert-org" id="cert-org">Тестирование по СУБП · ИКАО Прил. 19</div></div>
       </div>
       <table class="cert-tbl">
         <tr><td>ФИО</td><td id="c-name"></td></tr>

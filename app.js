@@ -16,8 +16,24 @@ const SVG = {
   book:'<svg viewBox="0 0 24 24"><path d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14V3H5zm0 2h12v12H5V5zm2 2v2h8V7H7zm0 4v2h8v-2H7z"/></svg>',
   tower:'<svg viewBox="0 0 24 24"><path d="M12 2c-1.1 0-2 .9-2 2 0 .74.4 1.38 1 1.72V8H8l1.2 12h1.85l-.4-4h2.7l-.4 4H15L16 8h-3V5.72c.6-.34 1-.98 1-1.72 0-1.1-.9-2-2-2zm-1.7 8h3.4l-.2 2h-3z"/></svg>',
   shield:'<svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3zm-1 14-4-4 1.4-1.4L11 13.2l4.6-4.6L17 10l-6 6z"/></svg>',
-  brain:'<svg viewBox="0 0 24 24"><path d="M9 2a3 3 0 0 0-3 3 3 3 0 0 0-2 2.8A3 3 0 0 0 3 10.5 3 3 0 0 0 4.2 13 3 3 0 0 0 6 18a3 3 0 0 0 3 3c.9 0 1.7-.4 2.2-1V3.5A2.5 2.5 0 0 0 9 2zm6 0a2.5 2.5 0 0 0-2.2 1.5V20c.5.6 1.3 1 2.2 1a3 3 0 0 0 3-3 3 3 0 0 0 1.8-5A3 3 0 0 0 21 10.5a3 3 0 0 0-1-2.7A3 3 0 0 0 18 5a3 3 0 0 0-3-3z"/></svg>'
+  brain:'<svg viewBox="0 0 24 24"><path d="M9 2a3 3 0 0 0-3 3 3 3 0 0 0-2 2.8A3 3 0 0 0 3 10.5 3 3 0 0 0 4.2 13 3 3 0 0 0 6 18a3 3 0 0 0 3 3c.9 0 1.7-.4 2.2-1V3.5A2.5 2.5 0 0 0 9 2zm6 0a2.5 2.5 0 0 0-2.2 1.5V20c.5.6 1.3 1 2.2 1a3 3 0 0 0 3-3 3 3 0 0 0 1.8-5A3 3 0 0 0 21 10.5a3 3 0 0 0-1-2.7A3 3 0 0 0 18 5a3 3 0 0 0-3-3z"/></svg>',
+  layers:'<svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5zm0 2.3L17.5 7 12 9.7 6.5 7 12 4.3zM2 12l10 5 10-5-2.1-1.05L12 14.7 4.1 10.95 2 12zm0 5 10 5 10-5-2.1-1.05L12 19.7 4.1 15.95 2 17z"/></svg>',
+  eye:'<svg viewBox="0 0 24 24"><path d="M12 5C6 5 2 12 2 12s4 7 10 7 10-7 10-7-4-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/></svg>',
+  chair:'<svg viewBox="0 0 24 24"><path d="M6 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h1v-2H6V5h2v6h8V5h2v6h-1v2h1a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H6zm-1 12 1 7h2l-.55-4h9.1L16 22h2l1-7H5z"/></svg>'
 };
+
+/* Предметы верхнего уровня. general — «общий блок», который в экзамене подмешивается; для ЧФ его нет (экзамен единый по всему предмету). */
+const SUBJECTS = [
+  { id:'subp', name:'СУБП', sub:'Управление безопасностью полётов · ИКАО Прил. 19', icon:'shield',
+    lead:'Подготовка авиаперсонала по Системе управления безопасностью полётов (ИКАО Приложение 19, Doc 9859). Выберите режим и категорию.',
+    cats:['atc','pilot','itp','cabin','airport','general'], general:'general',
+    certOrg:'Тестирование по СУБП · ИКАО Прил. 19' },
+  { id:'hf', name:'Человеческий фактор', sub:'Психология, ошибки, эргономика · ИКАО Doc 9683', icon:'brain',
+    lead:'Подготовка по человеческому фактору: модели и ошибки, человек и нагрузка, эргономика рабочего места (ИКАО Doc 9683). Выберите режим и раздел.',
+    cats:['hf_model','hf_human','hf_ergo'], general:null,
+    certOrg:'Тестирование по ЧФ · ИКАО Doc 9683' }
+];
+function curSubj(){ return SUBJECTS.find(s=>s.id===state.subject) || SUBJECTS[0]; }
 
 /* Пример матрицы рисков (5×5, ИКАО Doc 9859), отрисовка SVG */
 const MTX_FILL=['#e2574d','#e0a02a','#1fae84'];
@@ -58,52 +74,94 @@ function matrixSVG(){
 }
 
 const KEYS = ['А','Б','В','Г','Д'];
-const state = { mode:'train', cat:null, name:'', unit:'',
+const state = { mode:'train', subject:null, cat:null, name:'', unit:'',
   list:[], i:0, correct:0, answered:false, wrong:[],
   timerId:null, timeLeft:0, startTs:0, elapsed:0, finished:false };
 
 const $ = s => document.querySelector(s);
 const el = (t,c) => { const e=document.createElement(t); if(c) e.className=c; return e; };
 function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
-function catName(id){ if(id==='all') return 'Все вопросы'; const c=CATEGORIES.find(x=>x.id===id); return c?c.name:id; }
+function catName(id){
+  if(id==='__all'||id==='all') return 'Все вопросы';
+  if(id==='__exam') return curSubj().name;
+  const c=CATEGORIES.find(x=>x.id===id); return c?c.name:id;
+}
 function bestKey(m,c){ return 'subp_best_'+m+'_'+c; }
 function getBest(m,c){ return Number(localStorage.getItem(bestKey(m,c))||0); }
 function setBest(m,c,p){ if(p>getBest(m,c)) localStorage.setItem(bestKey(m,c),String(p)); }
 function fmt(s){ const m=Math.floor(s/60), x=s%60; return m+':'+String(x).padStart(2,'0'); }
-function show(id){ ['home','id','quiz','res','log'].forEach(s=>$('#screen-'+s).classList.toggle('hidden', s!==id)); }
+function show(id){ ['subj','home','id','quiz','res','log'].forEach(s=>$('#screen-'+s).classList.toggle('hidden', s!==id)); }
+function setBack(label, fn){ const b=$('#btn-home'); b.textContent=label; b.classList.remove('hidden'); b.onclick=()=>{ stopTimer(); fn(); }; }
 
 /* ---------- История ---------- */
 function loadHist(){ try{ return JSON.parse(localStorage.getItem(HIST_KEY)||'[]'); }catch(e){ return []; } }
 function saveHist(rec){ const h=loadHist(); h.unshift(rec); if(h.length>HIST_MAX) h.length=HIST_MAX; localStorage.setItem(HIST_KEY, JSON.stringify(h)); }
 
-/* ---------- Главный экран ---------- */
+/* ---------- Экран выбора предмета ---------- */
+function renderSubjects(){
+  state.subject=null; state.cat=null; stopTimer();
+  show('subj'); $('#btn-home').classList.add('hidden');
+  $('#brand-sub').textContent='СУБП · Человеческий фактор';
+  const wrap=$('#subjects'); wrap.innerHTML='';
+  SUBJECTS.forEach(s=>{
+    const total=s.cats.reduce((n,k)=>n+QUESTIONS[k].length,0);
+    const b=el('button','cat');
+    b.innerHTML='<span class="ic">'+SVG[s.icon]+'</span><span><span class="nm">'+s.name+'</span><br>'+
+      '<span class="ds">'+s.sub+'</span></span><span class="meta"><span class="cnt">'+total+' вопр.</span></span>';
+    b.onclick=()=>{ state.subject=s.id; renderHome(); };
+    wrap.appendChild(b);
+  });
+}
+
+/* ---------- Главный экран предмета ---------- */
 function renderHome(){
+  if(!state.subject){ renderSubjects(); return; }
+  const subj=curSubj();
   state.cat=null; stopTimer();
-  show('home'); $('#btn-home').classList.add('hidden');
+  show('home'); setBack('← Предметы', renderSubjects);
+  $('#brand-sub').textContent=subj.name;
+  $('#lead-home').textContent=subj.lead;
+  $('#sec-title').textContent = (subj.id==='subp') ? 'Категория персонала' : 'Раздел';
   $('#mode-train').classList.toggle('on',state.mode==='train');
   $('#mode-exam').classList.toggle('on',state.mode==='exam');
   $('#mode-hint').textContent = state.mode==='train'
     ? 'Практика: вопросы выбранного раздела с мгновенным пояснением. Без ограничений и таймера.'
-    : 'Экзамен: '+EXAM_SPECIAL+' профильных + '+EXAM_GENERAL+' общих = 25 вопросов · лимит '+(EXAM_TIME/60)+' мин · проходной 75% · справка.';
+    : (subj.general
+        ? 'Экзамен: '+EXAM_SPECIAL+' профильных + '+EXAM_GENERAL+' общих = 25 вопросов · лимит '+(EXAM_TIME/60)+' мин · проходной 75% · справка.'
+        : 'Экзамен: 25 вопросов по всему курсу · лимит '+(EXAM_TIME/60)+' мин · проходной 75% · справка.');
 
   const wrap=$('#cats'); wrap.innerHTML='';
-  CATEGORIES.forEach(c=>{
-    if(state.mode==='exam' && c.id==='general') return;
-    const cnt = state.mode==='exam' ? 25 : QUESTIONS[c.id].length;
-    const best=getBest(state.mode,c.id);
+
+  // ЧФ в режиме экзамена — единый итоговый экзамен по всему предмету
+  if(state.mode==='exam' && !subj.general){
+    const best=getBest('exam','__exam');
+    const b=el('button','cat');
+    b.innerHTML='<span class="ic">'+SVG[subj.icon]+'</span><span><span class="nm">Итоговый экзамен</span><br>'+
+      '<span class="ds">25 вопросов по всему курсу ЧФ</span></span><span class="meta"><span class="cnt">25 вопр.</span>'+
+      (best?'<br><span class="best">рекорд '+best+'%</span>':'')+'</span>';
+    b.onclick=()=>pick('__exam');
+    wrap.appendChild(b);
+    return;
+  }
+
+  subj.cats.forEach(id=>{
+    if(state.mode==='exam' && subj.general && id===subj.general) return;
+    const c=CATEGORIES.find(x=>x.id===id);
+    const cnt = state.mode==='exam' ? 25 : QUESTIONS[id].length;
+    const best=getBest(state.mode,id);
     const b=el('button','cat');
     b.innerHTML='<span class="ic">'+SVG[c.icon]+'</span><span><span class="nm">'+c.name+'</span><br>'+
       '<span class="ds">'+c.sub+'</span></span><span class="meta"><span class="cnt">'+cnt+' вопр.</span>'+
       (best?'<br><span class="best">рекорд '+best+'%</span>':'')+'</span>';
-    b.onclick=()=>pick(c.id);
+    b.onclick=()=>pick(id);
     wrap.appendChild(b);
   });
   if(state.mode==='train'){
-    const total=Object.values(QUESTIONS).reduce((s,a)=>s+a.length,0);
+    const total=subj.cats.reduce((n,k)=>n+QUESTIONS[k].length,0);
     const all=el('button','cat');
     all.innerHTML='<span class="ic">'+SVG.shield+'</span><span><span class="nm">Все вопросы</span><br>'+
-      '<span class="ds">Полный банк по всем категориям</span></span><span class="meta"><span class="cnt">'+total+' вопр.</span></span>';
-    all.onclick=()=>pick('all');
+      '<span class="ds">Полный банк предмета</span></span><span class="meta"><span class="cnt">'+total+' вопр.</span></span>';
+    all.onclick=()=>pick('__all');
     wrap.appendChild(all);
   }
 }
@@ -112,10 +170,10 @@ function renderHome(){
 function pick(cat){
   state.cat=cat;
   if(state.mode==='exam'){
-    $('#id-cat').textContent='Категория: '+catName(cat);
+    $('#id-cat').textContent=(curSubj().id==='subp'?'Категория: ':'Предмет: ')+catName(cat);
     $('#in-name').value=state.name; $('#in-unit').value=state.unit;
     validateId();
-    show('id'); $('#btn-home').classList.remove('hidden');
+    show('id'); setBack('← Меню', renderHome);
   } else startQuiz();
 }
 function validateId(){
@@ -124,21 +182,24 @@ function validateId(){
 
 /* ---------- Запуск ---------- */
 function buildList(cat){
+  const subj=curSubj();
+  const union=()=>{ let a=[]; subj.cats.forEach(k=>a=a.concat(QUESTIONS[k])); return a; };
   if(state.mode==='exam'){
-    // ЧФ — самостоятельный предмет: экзамен целиком из банка ЧФ, без общего блока СУБП
-    if(cat==='hf') return shuffle(QUESTIONS.hf).slice(0, EXAM_GENERAL+EXAM_SPECIAL);
+    // Предмет без общего блока (ЧФ) — единый экзамен по всему банку предмета
+    if(!subj.general || cat==='__exam') return shuffle(union()).slice(0, EXAM_GENERAL+EXAM_SPECIAL);
+    // СУБП — профильные + общий блок
     const spec=shuffle(QUESTIONS[cat]).slice(0,EXAM_SPECIAL);
-    const gen=shuffle(QUESTIONS.general).slice(0,EXAM_GENERAL);
+    const gen=shuffle(QUESTIONS[subj.general]).slice(0,EXAM_GENERAL);
     return shuffle(spec.concat(gen));
   }
-  if(cat==='all'){ let a=[]; Object.values(QUESTIONS).forEach(x=>a=a.concat(x)); return shuffle(a); }
+  if(cat==='__all'||cat==='all'){ return shuffle(union()); }
   return shuffle(QUESTIONS[cat]);
 }
 function startQuiz(){
   if(state.mode==='exam'){ state.name=$('#in-name').value.trim(); state.unit=$('#in-unit').value.trim(); }
   state.list=buildList(state.cat); state.i=0; state.correct=0; state.wrong=[]; state.answered=false; state.finished=false;
   state.startTs=Date.now(); state.elapsed=0;
-  show('quiz'); $('#btn-home').classList.remove('hidden');
+  show('quiz'); setBack('← Меню', renderHome);
   if(state.mode==='exam'){ state.timeLeft=EXAM_TIME; startTimer(); $('#q-timer').classList.remove('hidden'); }
   else $('#q-timer').classList.add('hidden');
   renderQuestion();
@@ -203,7 +264,7 @@ function finish(timeout){
   renderResults(timeout);
 }
 function renderResults(timeout){
-  show('res');
+  show('res'); setBack('← Меню', renderHome);
   const total=state.list.length, ok=state.correct, pct=Math.round(ok/total*100), pass=pct>=PASS*100;
   setBest(state.mode,state.cat,pct);
 
@@ -232,6 +293,7 @@ function renderResults(timeout){
   if(state.mode==='exam'){
     const now=new Date();
     const ds=now.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    $('#cert-org').textContent=curSubj().certOrg;
     $('#c-name').textContent=state.name; $('#c-unit').textContent=state.unit;
     $('#c-cat').textContent=catName(state.cat);
     $('#c-score').textContent=pct+'% ('+ok+' из '+total+'), время '+fmt(state.elapsed);
@@ -252,7 +314,7 @@ function renderResults(timeout){
 
 /* ---------- Журнал ---------- */
 function renderLog(){
-  show('log'); $('#btn-home').classList.remove('hidden');
+  show('log'); setBack('← Назад', state.subject?renderHome:renderSubjects);
   const h=loadHist(), wrap=$('#log-list');
   if(!h.length){ wrap.innerHTML='<div class="card" style="text-align:center;color:var(--muted)">Записей пока нет. Пройдите экзамен — результат сохранится здесь.</div>'; return; }
   wrap.innerHTML=h.map(r=>{
@@ -271,13 +333,13 @@ function init(){
   $('#in-name').oninput=validateId; $('#in-unit').oninput=validateId;
   $('#id-start').onclick=startQuiz; $('#id-cancel').onclick=renderHome;
   $('#q-next').onclick=next;
-  $('#btn-home').onclick=()=>{ stopTimer(); renderHome(); };
   $('#res-retry').onclick=()=>{ if(state.mode==='exam') pick(state.cat); else startQuiz(); };
   $('#res-home').onclick=renderHome;
   $('#res-print').onclick=()=>window.print();
-  $('#open-log').onclick=renderLog; $('#log-back').onclick=renderHome;
+  $('#open-log').onclick=renderLog; $('#subj-log').onclick=renderLog;
+  $('#log-back').onclick=()=>{ state.subject?renderHome():renderSubjects(); };
   $('#log-clear').onclick=()=>{ if(confirm('Очистить журнал прохождений на этом устройстве?')){ localStorage.removeItem(HIST_KEY); renderLog(); } };
-  renderHome();
+  renderSubjects();
   if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
 document.addEventListener('DOMContentLoaded',init);
