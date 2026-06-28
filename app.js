@@ -47,7 +47,13 @@ function matrixSVG(){
   return '<div style="margin-top:10px"><div style="font-size:12px;color:var(--muted);margin-bottom:4px">Пример матрицы рисков (ИКАО Doc 9859):</div>'
     +'<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:380px;height:auto;display:block;background:#0e1b17;border-radius:8px;padding:4px" xmlns="http://www.w3.org/2000/svg">'
     +cap+sev+lik+cells+leg+'</svg>'
-    +'<div style="font-size:11.5px;color:var(--muted);margin-top:7px;line-height:1.45">Пример: вероятность «Случайный» (4) × серьёзность «Катастрофическая» (A) → <b style="color:var(--txt)">4A</b> → недопустимый риск.<br>Числа частоты — пример; точные значения задаёт организация в руководстве по СУБП.</div></div>';
+    +'<div style="font-size:11px;color:var(--muted);margin-top:7px;line-height:1.55"><b style="color:var(--txt)">Серьёзность:</b> '
+    +'<b style="color:var(--txt)">A</b> Катастрофическая — гибель людей, разрушение ВС · '
+    +'<b style="color:var(--txt)">B</b> Опасная — тяжёлые травмы, крупный ущерб · '
+    +'<b style="color:var(--txt)">C</b> Серьёзная — серьёзный инцидент, травмы · '
+    +'<b style="color:var(--txt)">D</b> Незначительная — мелкий инцидент, ограничения · '
+    +'<b style="color:var(--txt)">E</b> Ничтожная — незначительные последствия</div>'
+    +'<div style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.45">Пример: вероятность «Случайный» (4) × серьёзность «Катастрофическая» (A) → <b style="color:var(--txt)">4A</b> → недопустимый риск.<br>Числа частоты — пример; точные значения задаёт организация в руководстве по СУБП.</div></div>';
 }
 
 const KEYS = ['А','Б','В','Г','Д'];
