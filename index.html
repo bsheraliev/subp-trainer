@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Тренажёр СУБП</title>
+<meta name="theme-color" content="#0e1b17">
+<meta name="description" content="Тренажёр по СУБП (системе управления безопасностью полётов) для авиационного персонала. ИКАО Приложение 19, Doc 9859.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <span class="brand">
+      <span class="logo"><svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3zm-1 14-4-4 1.4-1.4L11 13.2l4.6-4.6L17 10l-6 6z"/></svg></span>
+      <span>Тренажёр&nbsp;СУБП<br><span class="sub">Безопасность полётов · ИКАО</span></span>
+    </span>
+    <span class="spacer"></span>
+    <button id="btn-home" class="ghost-btn hidden">← Меню</button>
+  </header>
+
+  <!-- ГЛАВНЫЙ ЭКРАН -->
+  <main id="screen-home">
+    <p class="lead">Подготовка авиаперсонала по Системе управления безопасностью полётов. Выберите режим и свою категорию.</p>
+    <div class="modes">
+      <button id="mode-train" class="on">Тренажёр</button>
+      <button id="mode-exam">Экзамен</button>
+    </div>
+    <p id="mode-hint" class="mode-hint"></p>
+    <div class="section-title">Категория персонала</div>
+    <div id="cats"></div>
+    <button id="open-log" class="btn sec">📋 Журнал прохождений</button>
+  </main>
+
+  <!-- ЭКРАН ВВОДА ДАННЫХ (перед экзаменом) -->
+  <main id="screen-id" class="hidden">
+    <div class="card">
+      <div class="id-title">Данные для экзамена</div>
+      <p class="id-sub" id="id-cat"></p>
+      <label class="fld">Фамилия, имя, отчество
+        <input id="in-name" type="text" autocomplete="name" placeholder="Иванов Иван Иванович">
+      </label>
+      <label class="fld">Подразделение / должность
+        <input id="in-unit" type="text" placeholder="напр. Раёсати назорати авиатсионӣ">
+      </label>
+      <p class="id-note">Экзамен: 25 вопросов · лимит времени · проходной 75%. По завершении формируется справка.</p>
+      <button id="id-start" class="btn" disabled>Начать экзамен</button>
+      <button id="id-cancel" class="btn sec">Назад</button>
+    </div>
+  </main>
+
+  <!-- ЭКРАН ВОПРОСА -->
+  <main id="screen-quiz" class="hidden">
+    <div class="qhead">
+      <span id="q-count"></span>
+      <span id="q-timer" class="timer hidden">⏱ 20:00</span>
+      <span class="score" id="q-score"></span>
+    </div>
+    <div class="bar"><i id="q-bar"></i></div>
+    <div id="q-text" class="qtext"></div>
+    <div id="q-opts" class="opts"></div>
+    <div id="q-expl" class="expl hidden"></div>
+    <button id="q-next" class="btn hidden">Следующий вопрос</button>
+  </main>
+
+  <!-- ЭКРАН РЕЗУЛЬТАТОВ -->
+  <main id="screen-res" class="hidden">
+    <div id="ring"></div>
+    <div id="verdict" class="verdict"></div>
+    <div id="verdict-sub" class="verdict-sub"></div>
+    <div class="stats">
+      <div class="stat ok"><b id="stat-ok">0</b><span>верно</span></div>
+      <div class="stat bad"><b id="stat-bad">0</b><span>ошибок</span></div>
+      <div class="stat"><b id="stat-time">—</b><span>время</span></div>
+    </div>
+
+    <!-- Справка / сертификат -->
+    <div id="cert" class="cert hidden">
+      <div class="cert-head">
+        <div class="cert-logo"><svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3zm-1 14-4-4 1.4-1.4L11 13.2l4.6-4.6L17 10l-6 6z"/></svg></div>
+        <div><div class="cert-title">Справка о прохождении</div><div class="cert-org">Тестирование по СУБП · ИКАО Прил. 19</div></div>
+      </div>
+      <table class="cert-tbl">
+        <tr><td>ФИО</td><td id="c-name"></td></tr>
+        <tr><td>Подразделение</td><td id="c-unit"></td></tr>
+        <tr><td>Категория</td><td id="c-cat"></td></tr>
+        <tr><td>Результат</td><td id="c-score"></td></tr>
+        <tr><td>Статус</td><td id="c-status"></td></tr>
+        <tr><td>Дата и время</td><td id="c-date"></td></tr>
+      </table>
+      <div class="cert-foot">Документ сформирован тренажёром СУБП. Действителен как учебная справка.</div>
+    </div>
+
+    <button id="res-print" class="btn hidden">🖨 Печать / Сохранить PDF</button>
+    <button id="res-retry" class="btn sec">Пройти ещё раз</button>
+    <button id="res-home" class="btn sec">В меню</button>
+    <div id="review" class="review"></div>
+  </main>
+
+  <!-- ЖУРНАЛ -->
+  <main id="screen-log" class="hidden">
+    <div class="section-title">Журнал прохождений (на этом устройстве)</div>
+    <div id="log-list"></div>
+    <button id="log-clear" class="btn sec">Очистить журнал</button>
+    <button id="log-back" class="btn sec">В меню</button>
+  </main>
+
+  <footer class="foot">Основа: ИКАО Приложение&nbsp;19 · Doc&nbsp;9859 · Учебный тренажёр</footer>
+</div>
+
+<script src="questions.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
