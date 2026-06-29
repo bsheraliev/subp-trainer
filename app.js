@@ -1,6 +1,7 @@
 /* Тренажёр СУБП — логика приложения */
 'use strict';
 
+const EXAM_ENABLED = false;  // ← экзамен временно отключён («на стадии разработки»). true — включить режим экзамена в обоих предметах.
 const EXAM_GENERAL = 15;     // общих вопросов в экзамене
 const EXAM_SPECIAL = 10;     // профильных вопросов в экзамене
 const PASS = 0.75;           // проходной порог
@@ -124,13 +125,32 @@ function renderHome(){
   $('#sec-title').textContent = (subj.id==='subp') ? 'Категория персонала' : 'Раздел';
   $('#mode-train').classList.toggle('on',state.mode==='train');
   $('#mode-exam').classList.toggle('on',state.mode==='exam');
-  $('#mode-hint').textContent = state.mode==='train'
-    ? 'Практика: вопросы выбранного раздела с мгновенным пояснением. Без ограничений и таймера.'
-    : (subj.general
-        ? 'Экзамен: '+EXAM_SPECIAL+' профильных + '+EXAM_GENERAL+' общих = 25 вопросов · лимит '+(EXAM_TIME/60)+' мин · проходной 75% · справка.'
-        : 'Экзамен: 25 вопросов по всему курсу · лимит '+(EXAM_TIME/60)+' мин · проходной 75% · справка.');
+  // Бейдж «в разработке» на кнопке экзамена, пока режим отключён
+  $('#mode-exam').innerHTML = 'Экзамен' + (EXAM_ENABLED ? '' :
+    ' <span style="font-size:10px;font-weight:600;color:#e0a02a;border:1px solid #e0a02a;border-radius:6px;padding:1px 5px;vertical-align:middle">в разработке</span>');
+
+  const examOff = (state.mode==='exam' && !EXAM_ENABLED);
+  $('#mode-hint').textContent = examOff
+    ? 'Экзамен на стадии разработки и будет подключён позже. Сейчас доступен режим «Тренажёр».'
+    : (state.mode==='train'
+        ? 'Практика: вопросы выбранного раздела с мгновенным пояснением. Без ограничений и таймера.'
+        : (subj.general
+            ? 'Экзамен: '+EXAM_SPECIAL+' профильных + '+EXAM_GENERAL+' общих = 25 вопросов · лимит '+(EXAM_TIME/60)+' мин · проходной 75% · справка.'
+            : 'Экзамен: 25 вопросов по всему курсу · лимит '+(EXAM_TIME/60)+' мин · проходной 75% · справка.'));
 
   const wrap=$('#cats'); wrap.innerHTML='';
+
+  // Экзамен на стадии разработки — заглушка вместо категорий (для обоих предметов)
+  if(examOff){
+    const c=el('div','card');
+    c.style.textAlign='center';
+    c.innerHTML='<div style="font-size:34px;margin-bottom:6px">🛠️</div>'+
+      '<b style="color:var(--txt)">Экзамен на стадии разработки</b>'+
+      '<p style="color:var(--muted);margin-top:6px;line-height:1.5">Режим экзамена с таймером и справкой будет подключён позже. '+
+      'Пока доступна подготовка в режиме «Тренажёр».</p>';
+    wrap.appendChild(c);
+    return;
+  }
 
   // ЧФ в режиме экзамена — единый итоговый экзамен по всему предмету
   if(state.mode==='exam' && !subj.general){
