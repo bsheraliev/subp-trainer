@@ -203,13 +203,14 @@ function validateId(){
 /* ---------- Запуск ---------- */
 function buildList(cat){
   const subj=curSubj();
+  const mc=arr=>arr.filter(x=>x.type!=='open');   // экзамен — только закрытые вопросы
   const union=()=>{ let a=[]; subj.cats.forEach(k=>a=a.concat(QUESTIONS[k])); return a; };
   if(state.mode==='exam'){
     // Предмет без общего блока (ЧФ) — единый экзамен по всему банку предмета
-    if(!subj.general || cat==='__exam') return shuffle(union()).slice(0, EXAM_GENERAL+EXAM_SPECIAL);
+    if(!subj.general || cat==='__exam') return shuffle(mc(union())).slice(0, EXAM_GENERAL+EXAM_SPECIAL);
     // СУБП — профильные + общий блок
-    const spec=shuffle(QUESTIONS[cat]).slice(0,EXAM_SPECIAL);
-    const gen=shuffle(QUESTIONS[subj.general]).slice(0,EXAM_GENERAL);
+    const spec=shuffle(mc(QUESTIONS[cat])).slice(0,EXAM_SPECIAL);
+    const gen=shuffle(mc(QUESTIONS[subj.general])).slice(0,EXAM_GENERAL);
     return shuffle(spec.concat(gen));
   }
   if(cat==='__all'||cat==='all'){ return shuffle(union()); }
@@ -239,21 +240,102 @@ function updTimer(){ const t=$('#q-timer'); t.textContent='⏱ '+fmt(Math.max(0,
 /* ---------- Вопрос ---------- */
 function renderQuestion(){
   const q=state.list[state.i]; state.answered=false;
-  q._order=shuffle(q.o.map((t,idx)=>({t,idx})));
   $('#q-count').textContent=(state.i+1)+' / '+state.list.length;
   $('#q-score').innerHTML='<b>'+state.correct+'</b> верно';
   $('#q-bar').style.width=(state.i/state.list.length*100)+'%';
   $('#q-text').textContent=q.q;
   const opts=$('#q-opts'); opts.innerHTML='';
+  $('#q-expl').classList.add('hidden'); $('#q-expl').innerHTML='';
+  const nb=$('#q-next'); nb.classList.add('hidden');
+  nb.textContent = state.i===state.list.length-1 ? 'Завершить' : 'Следующий вопрос';
+  if(q.type==='open'){ renderOpen(q, opts); return; }
+  q._order=shuffle(q.o.map((t,idx)=>({t,idx})));
   q._order.forEach((o,vis)=>{
     const b=el('button','opt');
     b.innerHTML='<span class="k">'+KEYS[vis]+'</span><span>'+o.t+'</span>';
     b.onclick=()=>answer(b,o.idx,q);
     opts.appendChild(b);
   });
-  $('#q-expl').classList.add('hidden'); $('#q-expl').innerHTML='';
-  const nb=$('#q-next'); nb.classList.add('hidden');
-  nb.textContent = state.i===state.list.length-1 ? 'Завершить' : 'Следующий вопрос';
+}
+
+/* ---------- Открытый вопрос (свободный ответ + проверка ИИ) ---------- */
+function esc(s){ const d=document.createElement('div'); d.textContent=(s==null?'':String(s)); return d.innerHTML; }
+function aiUrl(){ return (localStorage.getItem('subp_ai_url')||'').trim(); }
+
+function renderOpen(q, opts){
+  const badge=el('div','open-badge');
+  badge.textContent = aiUrl() ? 'Развёрнутый ответ · проверка ИИ' : 'Развёрнутый ответ · локальная проверка';
+  opts.appendChild(badge);
+  const ta=el('textarea','open-input');
+  ta.placeholder='Введите ответ своими словами…'; ta.rows=5;
+  opts.appendChild(ta);
+  const btn=el('button','btn'); btn.textContent='Проверить ответ';
+  btn.onclick=()=>submitOpen(q, ta, btn);
+  opts.appendChild(btn);
+  setTimeout(()=>ta.focus(), 50);
+}
+
+async function submitOpen(q, ta, btn){
+  if(state.answered) return;
+  const answer=(ta.value||'').trim();
+  if(answer.length<3){ ta.focus(); return; }
+  state.answered=true; ta.disabled=true; btn.disabled=true; btn.textContent='Проверяю…';
+  let res;
+  try { res = await checkOpen(q, answer); }
+  catch(e){ res = localCheck(q, answer); res._offline=true; }
+  showOpenResult(q, answer, res);
+  const ok = res.score>=60;
+  if(ok) state.correct++; else state.wrong.push({q:q.q, your:answer, right:q.ref, e:(res.feedback||q.e||'')});
+  $('#q-score').innerHTML='<b>'+state.correct+'</b> верно';
+  $('#q-bar').style.width=((state.i+1)/state.list.length*100)+'%';
+  $('#q-next').classList.remove('hidden');
+}
+
+async function checkOpen(q, answer){
+  const url=aiUrl();
+  if(!url) return localCheck(q, answer);
+  const body=JSON.stringify({ action:'check', subject:curSubj().name, q:q.q, ref:q.ref, crit:q.crit||[], answer });
+  const r=await fetch(url, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body });
+  if(!r.ok) throw new Error('http '+r.status);
+  const d=await r.json();
+  if(d && d.error) throw new Error(d.error);
+  return { score:Math.max(0,Math.min(100, Math.round(Number(d.score)||0))),
+           verdict:d.verdict||'', feedback:d.feedback||'', missing:Array.isArray(d.missing)?d.missing:[], _ai:true };
+}
+
+/* Локальная проверка без ИИ: доля ключевых слов эталона, найденных в ответе */
+function localCheck(q, answer){
+  const norm=s=>(s||'').toLowerCase().replace(/ё/g,'е').replace(/[^a-zа-я0-9 ]/g,' ');
+  const stop=new Set(('и в во не на с со что а то как по из у за от о об для при или это его ее к до же бы был быть есть их они она он мы вы я но да чтобы если так уже еще нет ли бо про над под без через между').split(' '));
+  const terms=[...new Set(norm(q.ref).split(/\s+/).filter(w=>w.length>3 && !stop.has(w)))];
+  const ans=norm(answer);
+  const hit=terms.filter(t=>ans.indexOf(t)>=0);
+  const score=terms.length ? Math.round(hit.length/terms.length*100) : 0;
+  return { score,
+    verdict: score>=60?'зачтено (локально)':'сверьте с эталоном',
+    feedback:'Локальная проверка по ключевым словам эталона (ИИ-эндпоинт не задан или недоступен). Сверьте свой ответ с эталоном ниже.',
+    missing: terms.filter(t=>ans.indexOf(t)<0).slice(0,8), _local:true };
+}
+
+function showOpenResult(q, answer, res){
+  const ok=res.score>=60;
+  const ex=$('#q-expl'); ex.className='expl '+(ok?'ok':'bad');
+  let h='<div class="tag">'+(ok?'✓ ':'✕ ')+'Оценка: '+res.score+'/100'+(res.verdict?' · '+esc(res.verdict):'')+'</div>';
+  if(res.feedback) h+='<p>'+esc(res.feedback)+'</p>';
+  if(res.missing && res.missing.length) h+='<p style="margin-top:6px"><b>Стоит добавить:</b> '+res.missing.map(esc).join(', ')+'</p>';
+  h+='<div class="ref-ans"><b>Эталонный ответ:</b><br>'+esc(q.ref)+'</div>';
+  if(res._local||res._offline) h+='<p class="ai-note">Оценка локальная (без ИИ). Включите ИИ-проверку кнопкой «⚙ ИИ-проверка» на экране выбора предмета.</p>';
+  ex.innerHTML=h;
+  ex.classList.remove('hidden');
+}
+
+function setupAI(){
+  const cur=aiUrl();
+  const v=prompt('URL эндпоинта ИИ-проверки (Apps Script, оканчивается на /exec).\nОставьте пустым — локальная проверка по ключевым словам:', cur);
+  if(v===null) return;
+  const t=v.trim();
+  if(t) localStorage.setItem('subp_ai_url', t); else localStorage.removeItem('subp_ai_url');
+  alert(t?'ИИ-проверка включена.':'ИИ-проверка выключена (локальный режим).');
 }
 function answer(btn,chosen,q){
   if(state.answered) return; state.answered=true;
@@ -326,8 +408,8 @@ function renderResults(timeout){
   const rev=$('#review');
   if(state.wrong.length){
     let h='<h3>Разбор ошибок ('+state.wrong.length+')</h3>';
-    state.wrong.forEach(w=>{ h+='<div class="rev-item"><div class="q">'+w.q+'</div>'+
-      '<div class="a">Ваш ответ: '+w.your+'<br>Верно: <b>'+w.right+'</b><br>'+w.e+'</div></div>'; });
+    state.wrong.forEach(w=>{ h+='<div class="rev-item"><div class="q">'+esc(w.q)+'</div>'+
+      '<div class="a">Ваш ответ: '+esc(w.your)+'<br>Верно: <b>'+esc(w.right)+'</b><br>'+esc(w.e)+'</div></div>'; });
     rev.innerHTML=h;
   } else rev.innerHTML='<h3>Ошибок нет — отличная работа!</h3>';
 }
@@ -357,6 +439,7 @@ function init(){
   $('#res-home').onclick=renderHome;
   $('#res-print').onclick=()=>window.print();
   $('#open-log').onclick=renderLog; $('#subj-log').onclick=renderLog;
+  $('#subj-ai').onclick=setupAI;
   $('#log-back').onclick=()=>{ state.subject?renderHome():renderSubjects(); };
   $('#log-clear').onclick=()=>{ if(confirm('Очистить журнал прохождений на этом устройстве?')){ localStorage.removeItem(HIST_KEY); renderLog(); } };
   renderSubjects();
