@@ -205,19 +205,35 @@ function hashCode(s){ let h=5381; for(let i=0;i<s.length;i++){ h=((h<<5)+h+s.cha
 function examCodeSet(){ return !!localStorage.getItem('subp_exam_code'); }
 function setupExamCode(){
   const cur=examCodeSet();
-  const v=prompt((cur?'Изменить':'Задать')+' код одобрения экзамена (вводит администратор перед стартом).\nПустое поле — снять код:', '');
+  const v=prompt('Локальный ОФЛАЙН-резерв кода одобрения (только для этого устройства при отсутствии связи).\nОсновной код задаётся на сервере (свойство EXAM_CODE) и действует на всех устройствах.\n'+(cur?'Изменить':'Задать')+' офлайн-код (пусто — снять):', '');
   if(v===null) return;
   const t=v.trim();
-  if(t){ localStorage.setItem('subp_exam_code', hashCode(t)); alert('Код одобрения экзамена сохранён на этом устройстве.'); }
-  else { localStorage.removeItem('subp_exam_code'); alert('Код одобрения снят — экзамен нельзя одобрить, пока не задан новый.'); }
+  if(t){ localStorage.setItem('subp_exam_code', hashCode(t)); alert('Офлайн-резервный код сохранён на этом устройстве.'); }
+  else { localStorage.removeItem('subp_exam_code'); alert('Офлайн-резервный код снят.'); }
 }
-function startExam(){
-  const stored=localStorage.getItem('subp_exam_code');
-  if(!stored){ alert('Экзамен не одобрен: администратор не задал код одобрения.\nНа экране выбора предмета — кнопка «⚙ Код одобрения экзамена».'); return; }
+async function approveExam(code){
+  const r=await fetch(aiUrl(), { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify({ action:'approve', code }) });
+  if(!r.ok) throw new Error('http '+r.status);
+  const d=await r.json();
+  if(d.error) throw new Error(d.error);
+  return d.ok===true;
+}
+async function startExam(){
   const code=$('#in-approve').value.trim();
-  if(hashCode(code)!==stored){ alert('Неверный код одобрения. Экзамен не начат.'); $('#in-approve').value=''; validateId(); return; }
-  $('#in-approve').value='';
-  startQuiz();
+  if(!code) return;
+  const btn=$('#id-start'), label=btn.textContent;
+  btn.disabled=true; btn.textContent='Проверка одобрения…';
+  let ok=null;
+  try{ ok=await approveExam(code); }        // серверная проверка (все устройства)
+  catch(e){ ok=null; }
+  if(ok===null){                             // сервер недоступен → локальный офлайн-резерв
+    const stored=localStorage.getItem('subp_exam_code');
+    if(!stored){ alert('Нет связи для проверки одобрения, а офлайн-код на этом устройстве не задан. Проверьте интернет.'); btn.disabled=false; btn.textContent=label; return; }
+    ok = (hashCode(code)===stored);
+  }
+  if(ok){ $('#in-approve').value=''; startQuiz(); }
+  else { alert('Неверный код одобрения. Экзамен не начат.'); $('#in-approve').value=''; btn.textContent=label; validateId(); }
 }
 
 /* ---------- Запуск ---------- */
