@@ -280,7 +280,9 @@ function renderQuestion(){
 
 /* ---------- Открытый вопрос (свободный ответ + проверка ИИ) ---------- */
 function esc(s){ const d=document.createElement('div'); d.textContent=(s==null?'':String(s)); return d.innerHTML; }
-function aiUrl(){ return (localStorage.getItem('subp_ai_url')||'').trim(); }
+// Встроенный ИИ-эндпоинт по умолчанию (GAS: Groq+Gemini, ключи на стороне сервера).
+const AI_CHECK_URL='https://script.google.com/macros/s/AKfycbyB3ZvzC2olok3PMO3So9d10ViOID5Qcwnt0k6Yu-C_EZVgpolLI6w-r4CYz_FCSfZz/exec';
+function aiUrl(){ return (localStorage.getItem('subp_ai_url')||AI_CHECK_URL).trim(); }
 
 function renderOpen(q, opts){
   const badge=el('div','open-badge');
@@ -350,12 +352,12 @@ function showOpenResult(q, answer, res){
 }
 
 function setupAI(){
-  const cur=aiUrl();
-  const v=prompt('URL эндпоинта ИИ-проверки (Apps Script, оканчивается на /exec).\nОставьте пустым — локальная проверка по ключевым словам:', cur);
+  const cur=(localStorage.getItem('subp_ai_url')||'').trim();
+  const v=prompt('URL эндпоинта ИИ-проверки (Apps Script, оканчивается на /exec).\nОставьте пустым — использовать встроенный эндпоинт по умолчанию:', cur);
   if(v===null) return;
   const t=v.trim();
   if(t) localStorage.setItem('subp_ai_url', t); else localStorage.removeItem('subp_ai_url');
-  alert(t?'ИИ-проверка включена.':'ИИ-проверка выключена (локальный режим).');
+  alert(t?'Свой ИИ-эндпоинт сохранён.':'Будет использован встроенный ИИ-эндпоинт по умолчанию.');
 }
 function answer(btn,chosen,q){
   if(state.answered) return; state.answered=true;
