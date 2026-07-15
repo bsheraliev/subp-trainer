@@ -118,7 +118,7 @@ function renderSubjects(){
 function renderHome(){
   if(!state.subject){ renderSubjects(); return; }
   const subj=curSubj();
-  state.cat=null; stopTimer();
+  state.cat=null; stopTimer(); stopPoll();
   show('home'); setBack('← Предметы', renderSubjects);
   $('#brand-sub').textContent=subj.name;
   $('#lead-home').textContent=subj.lead;
@@ -200,8 +200,22 @@ function validateId(){
   $('#id-start').disabled = !($('#in-name').value.trim() && $('#in-unit').value.trim());
 }
 
-/* ---------- Персональное одобрение экзамена (код у экзаменатора) ---------- */
+/* ---------- Персональное одобрение экзамена (кнопка у экзаменатора / код) ---------- */
+let _pollTimer=null;
+function stopPoll(){ if(_pollTimer){ clearTimeout(_pollTimer); _pollTimer=null; } }
+async function pollApproval(reqId, tries){
+  if(state.reqId!==reqId) return;   // запрос отменён/сменился
+  try{
+    const r=await fetch(aiUrl(), { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({ action:'status', reqId }) });
+    const d=await r.json();
+    if(d.status==='approved'){ startQuiz(); return; }
+    if(d.status==='rejected'){ stopPoll(); $('#approve-msg').innerHTML='<span style="color:var(--bad)">Экзаменатор отклонил запрос.</span> Обратитесь к экзаменатору или начните заново.'; return; }
+  }catch(e){}
+  if(tries>0) _pollTimer=setTimeout(()=>pollApproval(reqId, tries-1), 3000);
+}
 function resetApprove(){
+  stopPoll();
   state.reqId=null;
   $('#approve-block').classList.add('hidden');
   const b=$('#id-start'); b.classList.remove('hidden'); b.textContent='Начать экзамен'; b.disabled=true;
@@ -220,8 +234,9 @@ async function requestExamCode(){
     if(!d.ok||!d.reqId) throw new Error(d.error||'нет ответа сервера');
     state.reqId=d.reqId;
     btn.classList.add('hidden');
-    $('#approve-msg').innerHTML='Запрос <b>№'+esc(d.reqId)+'</b> отправлен экзаменатору'+(d.delivered?'':' <span style="color:var(--bad)">(Telegram не настроен)</span>')+'. Получите код у экзаменатора и введите его ниже.';
+    $('#approve-msg').innerHTML='Запрос <b>№'+esc(d.reqId)+'</b> отправлен экзаменатору'+(d.delivered?'':' <span style="color:var(--bad)">(Telegram не настроен)</span>')+'. Ожидание одобрения — экзамен начнётся автоматически. Либо введите код от экзаменатора:';
     $('#approve-block').classList.remove('hidden');
+    pollApproval(d.reqId, 40);   // опрос статуса ~2 мин
     setTimeout(()=>$('#in-approve').focus(),50);
   }catch(e){
     alert('Не удалось запросить код одобрения. Проверьте связь.\n'+e.message);
@@ -261,6 +276,7 @@ function buildList(cat){
   return shuffle(QUESTIONS[cat]);
 }
 function startQuiz(){
+  stopPoll();
   if(state.mode==='exam'){ state.name=$('#in-name').value.trim(); state.unit=$('#in-unit').value.trim(); }
   state.list=buildList(state.cat); state.i=0; state.correct=0; state.wrong=[]; state.answered=false; state.finished=false;
   state.startTs=Date.now(); state.elapsed=0;
