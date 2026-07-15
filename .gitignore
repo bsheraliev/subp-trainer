@@ -7,3 +7,8 @@
 материалы/
 graphify-out/
 qr-app.png
+
+# защита базы: мастер вопросов и ключ AES — НЕ публиковать
+# (публичный questions.js = только пробник; data.full.enc = AES-шифр полной базы)
+questions.src.js
+.subp-fullkey

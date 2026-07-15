@@ -92,6 +92,61 @@ function getBest(m,c){ return Number(localStorage.getItem(bestKey(m,c))||0); }
 function setBest(m,c,p){ if(p>getBest(m,c)) localStorage.setItem(bestKey(m,c),String(p)); }
 function fmt(s){ const m=Math.floor(s/60), x=s%60; return m+':'+String(x).padStart(2,'0'); }
 function show(id){ ['subj','home','id','quiz','res','log'].forEach(s=>$('#screen-'+s).classList.toggle('hidden', s!==id)); }
+
+/* ===== Лицензия: баннер (демо/полный доступ) + модалка ввода кода организации ===== */
+function licBannerInto(wrap){
+  if(!window.SUBPLic || !wrap) return;
+  const bar=el('div','licbar '+(SUBPLic.isFull()?'ok':'demo'));
+  if(SUBPLic.isFull()){
+    const org=SUBPLic.org(), exp=SUBPLic.expires();
+    bar.textContent='✅ Полный доступ'+(org?' · '+org:'')+(exp?' · до '+exp:'');
+  } else {
+    let cnt=0; for(const k in QUESTIONS) cnt+=QUESTIONS[k].length;
+    bar.innerHTML='<span>🔒 Демо · '+cnt+' вопр. из 263. Полный курс — по коду организации.</span>'+
+      '<button class="licbtn">Ввести код</button>';
+    bar.querySelector('.licbtn').onclick=renderUnlock;
+  }
+  wrap.insertBefore(bar, wrap.firstChild);
+}
+function renderUnlock(){
+  if($('#lic-modal')) return;
+  const m=el('div','lic-modal'); m.id='lic-modal';
+  m.innerHTML='<div class="lic-card">'+
+    '<button class="lic-x" aria-label="Закрыть">✕</button>'+
+    '<div class="lic-hero">🛡️🔓</div>'+
+    '<h2>Полный курс СУБП</h2>'+
+    '<p class="lic-sub">263 вопроса по СУБП/SMS и человеческому фактору (ИКАО Приложение 19, Doc 9859). Доступ выдаётся организации по лицензии.</p>'+
+    '<input id="lic-code" type="text" autocomplete="off" placeholder="Код организации">'+
+    '<button id="lic-go" class="lic-primary">Разблокировать</button>'+
+    '<div id="lic-msg" class="lic-msg"></div>'+
+    '<p class="lic-note">Нет кода? Напишите нам — подключим вашу организацию:<br><b>b.sheraliev@gmail.com</b></p>'+
+    '</div>';
+  document.body.appendChild(m);
+  const close=()=>m.remove();
+  m.querySelector('.lic-x').onclick=close;
+  m.onclick=(e)=>{ if(e.target===m) close(); };
+  m.querySelector('#lic-go').onclick=doUnlock;
+  const inp=$('#lic-code'); inp.focus(); inp.onkeydown=(e)=>{ if(e.key==='Enter') doUnlock(); };
+}
+function doUnlock(){
+  const inp=$('#lic-code'), btn=$('#lic-go'), msg=$('#lic-msg');
+  const code=(inp&&inp.value||'').trim();
+  if(!code){ if(msg) msg.innerHTML='<span class="err">Введите код</span>'; return; }
+  if(btn){ btn.disabled=true; btn.textContent='Проверка…'; }
+  if(msg) msg.innerHTML='';
+  SUBPLic.unlock(code).then(res=>{
+    if(res.ok){
+      const mm=$('#lic-modal'); if(mm) mm.remove();
+      renderHome();
+    } else {
+      const map={ invalid:'Код не найден. Проверьте правильность.', revoked:'Лицензия отключена. Обратитесь к нам.',
+        expired:'Срок лицензии истёк'+(res.expires?' ('+res.expires+')':'')+'. Обратитесь для продления.',
+        network:'Нет связи с сервером. Проверьте интернет.', empty:'Введите код' };
+      if(btn){ btn.disabled=false; btn.textContent='Разблокировать'; }
+      if(msg) msg.innerHTML='<span class="err">'+(map[res.error]||'Не удалось разблокировать.')+'</span>';
+    }
+  });
+}
 function setBack(label, fn){ const b=$('#btn-home'); b.textContent=label; b.classList.remove('hidden'); b.onclick=()=>{ stopTimer(); fn(); }; }
 
 /* ---------- История ---------- */
@@ -104,6 +159,7 @@ function renderSubjects(){
   show('subj'); $('#btn-home').classList.add('hidden');
   $('#brand-sub').textContent='СУБП · Человеческий фактор';
   const wrap=$('#subjects'); wrap.innerHTML='';
+  licBannerInto(wrap);
   SUBJECTS.forEach(s=>{
     const total=s.cats.reduce((n,k)=>n+QUESTIONS[k].length,0);
     const b=el('button','cat');
@@ -139,6 +195,7 @@ function renderHome(){
             : 'Экзамен: 25 вопросов по всему курсу · лимит '+(EXAM_TIME/60)+' мин · проходной 75% · справка.'));
 
   const wrap=$('#cats'); wrap.innerHTML='';
+  licBannerInto(wrap);
 
   // Экзамен на стадии разработки — заглушка вместо категорий (для обоих предметов)
   if(examOff){
@@ -167,6 +224,14 @@ function renderHome(){
   subj.cats.forEach(id=>{
     if(state.mode==='exam' && subj.general && id===subj.general) return;
     const c=CATEGORIES.find(x=>x.id===id);
+    if(window.SUBPLic && SUBPLic.locked(id)){
+      const b=el('button','cat locked');
+      b.innerHTML='<span class="ic">'+SVG[c.icon]+'</span><span><span class="nm">'+c.name+'</span><br>'+
+        '<span class="ds">'+c.sub+'</span></span><span class="meta"><span class="lockbadge">🔒 по лицензии</span></span>';
+      b.onclick=renderUnlock;
+      wrap.appendChild(b);
+      return;
+    }
     const cnt = state.mode==='exam' ? 25 : QUESTIONS[id].length;
     const best=getBest(state.mode,id);
     const b=el('button','cat');
@@ -188,6 +253,7 @@ function renderHome(){
 
 /* ---------- Выбор категории ---------- */
 function pick(cat){
+  if(window.SUBPLic && SUBPLic.locked(cat)) return renderUnlock();
   state.cat=cat;
   if(state.mode==='exam'){
     $('#id-cat').textContent=(curSubj().id==='subp'?'Категория: ':'Предмет: ')+catName(cat);
