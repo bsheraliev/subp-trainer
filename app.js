@@ -192,48 +192,56 @@ function pick(cat){
   if(state.mode==='exam'){
     $('#id-cat').textContent=(curSubj().id==='subp'?'Категория: ':'Предмет: ')+catName(cat);
     $('#in-name').value=state.name; $('#in-unit').value=state.unit;
-    validateId();
+    resetApprove(); validateId();
     show('id'); setBack('← Меню', renderHome);
   } else startQuiz();
 }
 function validateId(){
-  $('#id-start').disabled = !($('#in-name').value.trim() && $('#in-unit').value.trim() && $('#in-approve').value.trim());
+  $('#id-start').disabled = !($('#in-name').value.trim() && $('#in-unit').value.trim());
 }
 
-/* ---------- Одобрение экзамена администратором ---------- */
-function hashCode(s){ let h=5381; for(let i=0;i<s.length;i++){ h=((h<<5)+h+s.charCodeAt(i))>>>0; } return String(h); }
-function examCodeSet(){ return !!localStorage.getItem('subp_exam_code'); }
-function setupExamCode(){
-  const cur=examCodeSet();
-  const v=prompt('Локальный ОФЛАЙН-резерв кода одобрения (только для этого устройства при отсутствии связи).\nОсновной код задаётся на сервере (свойство EXAM_CODE) и действует на всех устройствах.\n'+(cur?'Изменить':'Задать')+' офлайн-код (пусто — снять):', '');
-  if(v===null) return;
-  const t=v.trim();
-  if(t){ localStorage.setItem('subp_exam_code', hashCode(t)); alert('Офлайн-резервный код сохранён на этом устройстве.'); }
-  else { localStorage.removeItem('subp_exam_code'); alert('Офлайн-резервный код снят.'); }
+/* ---------- Персональное одобрение экзамена (код у экзаменатора) ---------- */
+function resetApprove(){
+  state.reqId=null;
+  $('#approve-block').classList.add('hidden');
+  const b=$('#id-start'); b.classList.remove('hidden'); b.textContent='Начать экзамен'; b.disabled=true;
+  $('#in-approve').value='';
 }
-async function approveExam(code){
-  const r=await fetch(aiUrl(), { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body:JSON.stringify({ action:'approve', code }) });
-  if(!r.ok) throw new Error('http '+r.status);
-  const d=await r.json();
-  if(d.error) throw new Error(d.error);
-  return d.ok===true;
+async function requestExamCode(){
+  const name=$('#in-name').value.trim(), unit=$('#in-unit').value.trim();
+  if(!name||!unit) return;
+  const btn=$('#id-start'), label=btn.textContent;
+  btn.disabled=true; btn.textContent='Отправляю запрос…';
+  try{
+    const r=await fetch(aiUrl(), { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({ action:'request', name, unit, subject:curSubj().name, cat:state.cat, catName:catName(state.cat) }) });
+    if(!r.ok) throw new Error('http '+r.status);
+    const d=await r.json();
+    if(!d.ok||!d.reqId) throw new Error(d.error||'нет ответа сервера');
+    state.reqId=d.reqId;
+    btn.classList.add('hidden');
+    $('#approve-msg').innerHTML='Запрос <b>№'+esc(d.reqId)+'</b> отправлен экзаменатору'+(d.delivered?'':' <span style="color:var(--bad)">(Telegram не настроен)</span>')+'. Получите код у экзаменатора и введите его ниже.';
+    $('#approve-block').classList.remove('hidden');
+    setTimeout(()=>$('#in-approve').focus(),50);
+  }catch(e){
+    alert('Не удалось запросить код одобрения. Проверьте связь.\n'+e.message);
+    btn.disabled=false; btn.textContent=label;
+  }
 }
-async function startExam(){
+async function confirmExamCode(){
   const code=$('#in-approve').value.trim();
   if(!code) return;
-  const btn=$('#id-start'), label=btn.textContent;
-  btn.disabled=true; btn.textContent='Проверка одобрения…';
-  let ok=null;
-  try{ ok=await approveExam(code); }        // серверная проверка (все устройства)
-  catch(e){ ok=null; }
-  if(ok===null){                             // сервер недоступен → локальный офлайн-резерв
-    const stored=localStorage.getItem('subp_exam_code');
-    if(!stored){ alert('Нет связи для проверки одобрения, а офлайн-код на этом устройстве не задан. Проверьте интернет.'); btn.disabled=false; btn.textContent=label; return; }
-    ok = (hashCode(code)===stored);
-  }
-  if(ok){ $('#in-approve').value=''; startQuiz(); }
-  else { alert('Неверный код одобрения. Экзамен не начат.'); $('#in-approve').value=''; btn.textContent=label; validateId(); }
+  const btn=$('#approve-btn'), label=btn.textContent;
+  btn.disabled=true; btn.textContent='Проверяю…';
+  try{
+    const r=await fetch(aiUrl(), { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({ action:'verify', reqId:state.reqId, code }) });
+    if(!r.ok) throw new Error('http '+r.status);
+    const d=await r.json();
+    if(d.ok){ startQuiz(); return; }
+    alert('Неверный или просроченный код. Уточните код у экзаменатора.');
+  }catch(e){ alert('Ошибка проверки кода. Проверьте связь.'); }
+  $('#in-approve').value=''; btn.disabled=false; btn.textContent=label; $('#in-approve').focus();
 }
 
 /* ---------- Запуск ---------- */
@@ -470,15 +478,14 @@ function renderLog(){
 function init(){
   $('#mode-train').onclick=()=>{state.mode='train';renderHome();};
   $('#mode-exam').onclick=()=>{state.mode='exam';renderHome();};
-  $('#in-name').oninput=validateId; $('#in-unit').oninput=validateId; $('#in-approve').oninput=validateId;
-  $('#id-start').onclick=startExam; $('#id-cancel').onclick=renderHome;
+  $('#in-name').oninput=validateId; $('#in-unit').oninput=validateId;
+  $('#id-start').onclick=requestExamCode; $('#approve-btn').onclick=confirmExamCode; $('#id-cancel').onclick=renderHome;
   $('#q-next').onclick=next;
   $('#res-retry').onclick=()=>{ if(state.mode==='exam') pick(state.cat); else startQuiz(); };
   $('#res-home').onclick=renderHome;
   $('#res-print').onclick=()=>window.print();
   $('#open-log').onclick=renderLog; $('#subj-log').onclick=renderLog;
   $('#subj-ai').onclick=setupAI;
-  $('#subj-code').onclick=setupExamCode;
   $('#log-back').onclick=()=>{ state.subject?renderHome():renderSubjects(); };
   $('#log-clear').onclick=()=>{ if(confirm('Очистить журнал прохождений на этом устройстве?')){ localStorage.removeItem(HIST_KEY); renderLog(); } };
   renderSubjects();

@@ -29,7 +29,6 @@
     <div id="subjects"></div>
     <button id="subj-log" class="btn sec">📋 Журнал прохождений</button>
     <button id="subj-ai" class="btn sec">⚙ ИИ-проверка открытых ответов</button>
-    <button id="subj-code" class="btn sec">⚙ Код одобрения экзамена (офлайн-резерв)</button>
   </main>
 
   <!-- ГЛАВНЫЙ ЭКРАН -->
@@ -56,11 +55,15 @@
       <label class="fld">Подразделение / должность
         <input id="in-unit" type="text" placeholder="напр. Управление сертификации и надзора">
       </label>
-      <label class="fld">Код одобрения (вводит администратор)
-        <input id="in-approve" type="password" autocomplete="off" placeholder="код для допуска к экзамену">
-      </label>
-      <p class="id-note">Экзамен: 25 вопросов · лимит времени · проходной 75%. Старт — после ввода данных и одобрения администратора (кода). По завершении формируется справка.</p>
+      <p class="id-note">Экзамен: 25 вопросов · лимит времени · проходной 75%. Нажмите «Начать» — экзаменатор получит персональный код и сообщит его вам.</p>
       <button id="id-start" class="btn" disabled>Начать экзамен</button>
+      <div id="approve-block" class="hidden">
+        <p id="approve-msg" class="id-note"></p>
+        <label class="fld">Код от экзаменатора
+          <input id="in-approve" type="tel" inputmode="numeric" autocomplete="off" placeholder="введите код">
+        </label>
+        <button id="approve-btn" class="btn">Подтвердить и начать</button>
+      </div>
       <button id="id-cancel" class="btn sec">Назад</button>
     </div>
   </main>
