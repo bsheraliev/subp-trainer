@@ -1,7 +1,7 @@
 /* Тренажёр СУБП — логика приложения */
 'use strict';
 
-const EXAM_ENABLED = false;  // ← экзамен временно отключён («на стадии разработки»). true — включить режим экзамена в обоих предметах.
+const EXAM_ENABLED = true;   // экзамен включён; старт возможен после ввода данных и одобрения администратора (код).
 const EXAM_GENERAL = 15;     // общих вопросов в экзамене
 const EXAM_SPECIAL = 10;     // профильных вопросов в экзамене
 const PASS = 0.75;           // проходной порог
@@ -197,7 +197,27 @@ function pick(cat){
   } else startQuiz();
 }
 function validateId(){
-  $('#id-start').disabled = !($('#in-name').value.trim() && $('#in-unit').value.trim());
+  $('#id-start').disabled = !($('#in-name').value.trim() && $('#in-unit').value.trim() && $('#in-approve').value.trim());
+}
+
+/* ---------- Одобрение экзамена администратором ---------- */
+function hashCode(s){ let h=5381; for(let i=0;i<s.length;i++){ h=((h<<5)+h+s.charCodeAt(i))>>>0; } return String(h); }
+function examCodeSet(){ return !!localStorage.getItem('subp_exam_code'); }
+function setupExamCode(){
+  const cur=examCodeSet();
+  const v=prompt((cur?'Изменить':'Задать')+' код одобрения экзамена (вводит администратор перед стартом).\nПустое поле — снять код:', '');
+  if(v===null) return;
+  const t=v.trim();
+  if(t){ localStorage.setItem('subp_exam_code', hashCode(t)); alert('Код одобрения экзамена сохранён на этом устройстве.'); }
+  else { localStorage.removeItem('subp_exam_code'); alert('Код одобрения снят — экзамен нельзя одобрить, пока не задан новый.'); }
+}
+function startExam(){
+  const stored=localStorage.getItem('subp_exam_code');
+  if(!stored){ alert('Экзамен не одобрен: администратор не задал код одобрения.\nНа экране выбора предмета — кнопка «⚙ Код одобрения экзамена».'); return; }
+  const code=$('#in-approve').value.trim();
+  if(hashCode(code)!==stored){ alert('Неверный код одобрения. Экзамен не начат.'); $('#in-approve').value=''; validateId(); return; }
+  $('#in-approve').value='';
+  startQuiz();
 }
 
 /* ---------- Запуск ---------- */
@@ -432,14 +452,15 @@ function renderLog(){
 function init(){
   $('#mode-train').onclick=()=>{state.mode='train';renderHome();};
   $('#mode-exam').onclick=()=>{state.mode='exam';renderHome();};
-  $('#in-name').oninput=validateId; $('#in-unit').oninput=validateId;
-  $('#id-start').onclick=startQuiz; $('#id-cancel').onclick=renderHome;
+  $('#in-name').oninput=validateId; $('#in-unit').oninput=validateId; $('#in-approve').oninput=validateId;
+  $('#id-start').onclick=startExam; $('#id-cancel').onclick=renderHome;
   $('#q-next').onclick=next;
   $('#res-retry').onclick=()=>{ if(state.mode==='exam') pick(state.cat); else startQuiz(); };
   $('#res-home').onclick=renderHome;
   $('#res-print').onclick=()=>window.print();
   $('#open-log').onclick=renderLog; $('#subj-log').onclick=renderLog;
   $('#subj-ai').onclick=setupAI;
+  $('#subj-code').onclick=setupExamCode;
   $('#log-back').onclick=()=>{ state.subject?renderHome():renderSubjects(); };
   $('#log-clear').onclick=()=>{ if(confirm('Очистить журнал прохождений на этом устройстве?')){ localStorage.removeItem(HIST_KEY); renderLog(); } };
   renderSubjects();
