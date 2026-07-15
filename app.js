@@ -174,7 +174,7 @@ function renderSubjects(){
 function renderHome(){
   if(!state.subject){ renderSubjects(); return; }
   const subj=curSubj();
-  state.cat=null; stopTimer();
+  state.cat=null; stopTimer(); examCleanup();
   show('home'); setBack('← Предметы', renderSubjects);
   $('#brand-sub').textContent=subj.name;
   $('#lead-home').textContent=subj.lead;
@@ -329,10 +329,10 @@ function buildList(cat){
 function startQuiz(){
   if(state.mode==='exam'){ state.name=$('#in-name').value.trim(); state.unit=$('#in-unit').value.trim(); }
   state.list=buildList(state.cat); state.i=0; state.correct=0; state.wrong=[]; state.answered=false; state.finished=false;
-  state.startTs=Date.now(); state.elapsed=0;
+  state.startTs=Date.now(); state.elapsed=0; state.switches=0; state.qTimer=null;
   show('quiz'); setBack('← Меню', renderHome);
-  if(state.mode==='exam'){ state.timeLeft=EXAM_TIME; startTimer(); $('#q-timer').classList.remove('hidden'); }
-  else $('#q-timer').classList.add('hidden');
+  if(state.mode==='exam'){ state.timeLeft=EXAM_TIME; startTimer(); $('#q-timer').classList.remove('hidden'); document.body.classList.add('exam-lock'); updSwitch(); }
+  else { $('#q-timer').classList.add('hidden'); document.body.classList.remove('exam-lock'); }
   renderQuestion();
 }
 
@@ -346,6 +346,44 @@ function startTimer(){
 }
 function stopTimer(){ if(state.timerId){ clearInterval(state.timerId); state.timerId=null; } }
 function updTimer(){ const t=$('#q-timer'); t.textContent='⏱ '+fmt(Math.max(0,state.timeLeft)); t.classList.toggle('low',state.timeLeft<=60); }
+
+/* ---------- Антисписывание (действует только в экзамене) ---------- */
+const PER_Q = 40;   // секунд на вопрос
+function examActive(){ return state.mode==='exam' && !state.finished && !$('#screen-quiz').classList.contains('hidden'); }
+function examCleanup(){ stopQTimer(); document.body.classList.remove('exam-lock'); }
+
+// Таймер на вопрос
+function qTimeEl(){ let e=$('#q-qtime'); if(!e){ e=el('span','qtime hidden'); e.id='q-qtime'; const h=document.querySelector('#screen-quiz .qhead'); if(h) h.appendChild(e); } return e; }
+function startQTimer(){ stopQTimer(); state.qLeft=PER_Q; updQTime(); state.qTimer=setInterval(()=>{ state.qLeft--; updQTime(); if(state.qLeft<=0){ stopQTimer(); autoAdvance(); } },1000); }
+function stopQTimer(){ if(state.qTimer){ clearInterval(state.qTimer); state.qTimer=null; } const e=$('#q-qtime'); if(e) e.classList.add('hidden'); }
+function updQTime(){ const e=qTimeEl(); e.classList.remove('hidden'); e.textContent='⏳ '+Math.max(0,state.qLeft)+' с'; e.classList.toggle('low', state.qLeft<=10); }
+function autoAdvance(){
+  if(!state.answered){ state.answered=true; const q=state.list[state.i];
+    state.wrong.push({ q:q.q, your:'(не отвечено — время вышло)', right:(q.type==='open'?q.ref:q.o[q.a]), e:q.e||'' }); }
+  next();
+}
+
+// Детекция ухода со вкладки/приложения
+function switchEl(){ let e=$('#q-switch'); if(!e){ e=el('span','qswitch hidden'); e.id='q-switch'; const h=document.querySelector('#screen-quiz .qhead'); if(h) h.appendChild(e); } return e; }
+function updSwitch(){ const e=switchEl(); if(state.switches>0){ e.classList.remove('hidden'); e.textContent='⚠ уходов: '+state.switches; } else e.classList.add('hidden'); }
+function flashLeaveWarning(){
+  let b=$('#leave-warn');
+  if(!b){ b=el('div','leave-warn'); b.id='leave-warn'; const m=$('#screen-quiz'); if(m) m.insertBefore(b, m.firstChild); }
+  b.textContent='⚠️ Зафиксирован выход из экзамена ('+state.switches+'). Это передаётся экзаменатору.';
+  b.classList.add('show'); clearTimeout(b._t); b._t=setTimeout(()=>b.classList.remove('show'), 4500);
+}
+function onVisibility(){
+  if(document.hidden){ if(examActive()){ state.switches=(state.switches||0)+1; updSwitch(); } }
+  else if(examActive() && state.switches>0){ flashLeaveWarning(); }
+}
+function blockIfExam(e){ if(document.body.classList.contains('exam-lock')){ e.preventDefault(); return false; } }
+
+// Отчёт экзаменатору о результате (best-effort, только экзамен)
+function reportExam(pct, ok, total, pass){
+  try{ fetch(aiUrl(), { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify({ action:'report', reqId:state.reqId, name:state.name, unit:state.unit,
+      subject:curSubj().name, catName:catName(state.cat), pct, ok, total, pass, switches:(state.switches||0), sec:state.elapsed }) }); }catch(e){}
+}
 
 /* ---------- Вопрос ---------- */
 function renderQuestion(){
@@ -366,6 +404,7 @@ function renderQuestion(){
     b.onclick=()=>answer(b,o.idx,q);
     opts.appendChild(b);
   });
+  if(state.mode==='exam') startQTimer();
 }
 
 /* ---------- Открытый вопрос (свободный ответ + проверка ИИ) ---------- */
@@ -450,7 +489,7 @@ function setupAI(){
   alert(t?'Свой ИИ-эндпоинт сохранён.':'Будет использован встроенный ИИ-эндпоинт по умолчанию.');
 }
 function answer(btn,chosen,q){
-  if(state.answered) return; state.answered=true;
+  if(state.answered) return; state.answered=true; stopQTimer();
   const ok=chosen===q.a;
   if(ok) state.correct++; else state.wrong.push({q:q.q,your:q.o[chosen],right:q.o[q.a],e:q.e});
   [...$('#q-opts').children].forEach((b,vis)=>{
@@ -473,7 +512,7 @@ function next(){
 
 /* ---------- Результаты ---------- */
 function finish(timeout){
-  if(state.finished) return; state.finished=true; stopTimer();
+  if(state.finished) return; state.finished=true; stopTimer(); examCleanup();
   state.elapsed=Math.round((Date.now()-state.startTs)/1000);
   renderResults(timeout);
 }
@@ -494,7 +533,7 @@ function renderResults(timeout){
   if(state.mode==='exam'){
     v.className='verdict '+(pass?'pass':'fail');
     v.textContent=pass?'Тест сдан':'Тест не сдан';
-    $('#verdict-sub').textContent=(timeout?'Время вышло. ':'')+(pass?'Поздравляем! Результат зачтён.':'Нужно не менее 75% (19 из 25).');
+    $('#verdict-sub').textContent=(timeout?'Время вышло. ':'')+(pass?'Поздравляем! Результат зачтён.':'Нужно не менее 75% (19 из 25).')+((state.switches||0)>0?' ⚠️ Выходов из приложения: '+state.switches+'.':'');
   } else {
     v.className='verdict pass'; v.textContent='Тренировка завершена';
     $('#verdict-sub').textContent='Правильных ответов: '+ok+' из '+total+'.';
@@ -510,11 +549,12 @@ function renderResults(timeout){
     $('#cert-org').textContent=curSubj().certOrg;
     $('#c-name').textContent=state.name; $('#c-unit').textContent=state.unit;
     $('#c-cat').textContent=catName(state.cat);
-    $('#c-score').textContent=pct+'% ('+ok+' из '+total+'), время '+fmt(state.elapsed);
+    $('#c-score').textContent=pct+'% ('+ok+' из '+total+'), время '+fmt(state.elapsed)+' · выходов из приложения: '+(state.switches||0);
     const st=$('#c-status'); st.textContent=pass?'СДАН':'НЕ СДАН'; st.className=pass?'st-pass':'st-fail';
     $('#c-date').textContent=ds;
     cert.classList.remove('hidden'); pr.classList.remove('hidden');
-    saveHist({d:now.toISOString(),name:state.name,unit:state.unit,cat:catName(state.cat),pct,ok,total,sec:state.elapsed,pass});
+    saveHist({d:now.toISOString(),name:state.name,unit:state.unit,cat:catName(state.cat),pct,ok,total,sec:state.elapsed,pass,sw:(state.switches||0)});
+    reportExam(pct, ok, total, pass);
   } else { cert.classList.add('hidden'); pr.classList.add('hidden'); }
 
   const rev=$('#review');
@@ -536,7 +576,7 @@ function renderLog(){
     return '<div class="log-item '+(r.pass?'p':'f')+'"><div class="li-top"><b>'+r.name+'</b>'+
       '<span class="li-pct '+(r.pass?'p':'f')+'">'+r.pct+'%</span></div>'+
       '<div class="li-sub">'+r.cat+' · '+r.unit+'</div>'+
-      '<div class="li-sub">'+d+' · '+(r.pass?'сдан':'не сдан')+' · '+r.ok+'/'+r.total+'</div></div>';
+      '<div class="li-sub">'+d+' · '+(r.pass?'сдан':'не сдан')+' · '+r.ok+'/'+r.total+((r.sw||0)>0?' · ⚠ уходов '+r.sw:'')+'</div></div>';
   }).join('');
 }
 
@@ -554,6 +594,8 @@ function init(){
   $('#subj-ai').onclick=setupAI;
   $('#log-back').onclick=()=>{ state.subject?renderHome():renderSubjects(); };
   $('#log-clear').onclick=()=>{ if(confirm('Очистить журнал прохождений на этом устройстве?')){ localStorage.removeItem(HIST_KEY); renderLog(); } };
+  document.addEventListener('visibilitychange', onVisibility);
+  ['copy','cut','contextmenu','selectstart','dragstart'].forEach(ev=>document.addEventListener(ev, blockIfExam));
   renderSubjects();
   if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
