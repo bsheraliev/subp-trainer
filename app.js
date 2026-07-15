@@ -119,7 +119,7 @@ function renderUnlock(){
     '<input id="lic-code" type="text" autocomplete="off" placeholder="Код организации">'+
     '<button id="lic-go" class="lic-primary">Разблокировать</button>'+
     '<div id="lic-msg" class="lic-msg"></div>'+
-    '<p class="lic-note">Нет кода? Напишите нам — подключим вашу организацию:<br><b>b.sheraliev@gmail.com</b></p>'+
+    '<p class="lic-note">Нет кода? Обратитесь к вашей организации за кодом доступа.</p>'+
     '</div>';
   document.body.appendChild(m);
   const close=()=>m.remove();
