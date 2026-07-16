@@ -6,6 +6,7 @@ const EXAM_GENERAL = 15;     // общих вопросов в экзамене
 const EXAM_SPECIAL = 10;     // профильных вопросов в экзамене
 const PASS = 0.75;           // проходной порог
 const EXAM_TIME = 20 * 60;   // лимит экзамена, сек
+const CONTACT_TG = 'https://t.me/Ori_gemini_bot';   // контакт/поддержка в Telegram
 const HIST_KEY = 'subp_history';
 const HIST_MAX = 60;
 
@@ -120,6 +121,7 @@ function renderUnlock(){
     '<button id="lic-go" class="lic-primary">Разблокировать</button>'+
     '<div id="lic-msg" class="lic-msg"></div>'+
     '<p class="lic-note">Нет кода? Обратитесь к вашей организации за кодом доступа.</p>'+
+    '<a class="lic-primary" style="display:block;text-align:center;text-decoration:none;margin-top:8px" href="'+CONTACT_TG+'" target="_blank" rel="noopener">✈️ Связаться в Telegram</a>'+
     '</div>';
   document.body.appendChild(m);
   const close=()=>m.remove();
