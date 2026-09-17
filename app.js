@@ -10,6 +10,22 @@ const CONTACT_TG = 'https://t.me/Ori_gemini_bot';   // контакт/подде
 const HIST_KEY = 'subp_history';
 const HIST_MAX = 60;
 
+/* Основные организации/компании ГА РТ для выбора при запросе экзамена.
+   «Другая организация…» открывает поле свободного ввода. Список легко расширять. */
+const ORGS = [
+  'Агентство гражданской авиации (АГА)',
+  'Сомон Эйр (Somon Air)',
+  'Шохин Эйр (Shohin Air)',
+  'Тоҷик Эйр (Tajik Air)',
+  'Международный аэропорт Душанбе (МАД)',
+  'Международный аэропорт Худжанд',
+  'Международный аэропорт Куляб',
+  'Международный аэропорт Бохтар',
+  'Тоҷикаэронавигатсия (ТАН)',
+  'SCAT',
+  'East Air'
+];
+
 const SVG = {
   radar:'<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10h-2a8 8 0 1 1-8-8V2z"/><path d="M12 6a6 6 0 1 0 6 6h-2a4 4 0 1 1-4-4V6z"/><circle cx="12" cy="12" r="1.6"/></svg>',
   plane:'<svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z"/></svg>',
@@ -259,13 +275,41 @@ function pick(cat){
   state.cat=cat;
   if(state.mode==='exam'){
     $('#id-cat').textContent=(curSubj().id==='subp'?'Категория: ':'Предмет: ')+catName(cat);
-    $('#in-name').value=state.name; $('#in-unit').value=state.unit;
+    fillOrgs();
+    $('#in-name').value=state.name; $('#in-unit').value=state.unit; setOrg(state.org||'');
     resetApprove(); validateId();
     show('id'); setBack('← Меню', renderHome);
   } else startQuiz();
 }
 function validateId(){
-  $('#id-start').disabled = !($('#in-name').value.trim() && $('#in-unit').value.trim());
+  $('#id-start').disabled = !($('#in-name').value.trim() && curOrg() && $('#in-unit').value.trim());
+}
+/* Выпадающий список организаций + свободный ввод «Другая…» */
+function fillOrgs(){
+  const sel=$('#in-org'); if(!sel) return;
+  if(!sel._filled){
+    sel._filled=true;
+    sel.innerHTML='<option value="">— выберите организацию —</option>'+
+      ORGS.map(o=>'<option value="'+o+'">'+o+'</option>').join('')+
+      '<option value="__other">Другая организация…</option>';
+    sel.onchange=()=>{
+      const other=sel.value==='__other';
+      $('#in-org-other-wrap').classList.toggle('hidden', !other);
+      if(other) setTimeout(()=>$('#in-org-other').focus(),30);
+      validateId();
+    };
+    $('#in-org-other').oninput=validateId;
+  }
+}
+function curOrg(){
+  const sel=$('#in-org'); if(!sel) return '';
+  return sel.value==='__other' ? $('#in-org-other').value.trim() : sel.value;
+}
+function setOrg(o){
+  const sel=$('#in-org'); if(!sel) return;
+  if(o && ORGS.indexOf(o)>=0){ sel.value=o; $('#in-org-other-wrap').classList.add('hidden'); $('#in-org-other').value=''; }
+  else if(o){ sel.value='__other'; $('#in-org-other-wrap').classList.remove('hidden'); $('#in-org-other').value=o; }
+  else { sel.value=''; $('#in-org-other-wrap').classList.add('hidden'); $('#in-org-other').value=''; }
 }
 
 /* ---------- Персональное одобрение экзамена (код у экзаменатора) ---------- */
@@ -276,13 +320,14 @@ function resetApprove(){
   $('#in-approve').value='';
 }
 async function requestExamCode(){
-  const name=$('#in-name').value.trim(), unit=$('#in-unit').value.trim();
-  if(!name||!unit) return;
+  const name=$('#in-name').value.trim(), unit=$('#in-unit').value.trim(), org=curOrg();
+  if(!name||!unit||!org) return;
+  state.org=org;
   const btn=$('#id-start'), label=btn.textContent;
   btn.disabled=true; btn.textContent='Отправляю запрос…';
   try{
     const r=await fetch(aiUrl(), { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify({ action:'request', name, unit, subject:curSubj().name, cat:state.cat, catName:catName(state.cat) }) });
+      body:JSON.stringify({ action:'request', name, unit, org, subject:curSubj().name, cat:state.cat, catName:catName(state.cat) }) });
     if(!r.ok) throw new Error('http '+r.status);
     const d=await r.json();
     if(!d.ok||!d.reqId) throw new Error(d.error||'нет ответа сервера');
@@ -329,7 +374,7 @@ function buildList(cat){
   return shuffle(QUESTIONS[cat]);
 }
 function startQuiz(){
-  if(state.mode==='exam'){ state.name=$('#in-name').value.trim(); state.unit=$('#in-unit').value.trim(); }
+  if(state.mode==='exam'){ state.name=$('#in-name').value.trim(); state.unit=$('#in-unit').value.trim(); state.org=curOrg()||state.org; }
   state.list=buildList(state.cat); state.i=0; state.correct=0; state.wrong=[]; state.answered=false; state.finished=false;
   state.startTs=Date.now(); state.elapsed=0; state.switches=0; state.qTimer=null;
   show('quiz'); setBack('← Меню', renderHome);
@@ -383,7 +428,7 @@ function blockIfExam(e){ if(document.body.classList.contains('exam-lock')){ e.pr
 // Отчёт экзаменатору о результате (best-effort, только экзамен)
 function reportExam(pct, ok, total, pass){
   try{ fetch(aiUrl(), { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body:JSON.stringify({ action:'report', reqId:state.reqId, name:state.name, unit:state.unit,
+    body:JSON.stringify({ action:'report', reqId:state.reqId, name:state.name, unit:state.unit, org:state.org||'',
       subject:curSubj().name, catName:catName(state.cat), pct, ok, total, pass, switches:(state.switches||0), sec:state.elapsed }) }); }catch(e){}
 }
 
@@ -549,13 +594,13 @@ function renderResults(timeout){
     const now=new Date();
     const ds=now.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
     $('#cert-org').textContent=curSubj().certOrg;
-    $('#c-name').textContent=state.name; $('#c-unit').textContent=state.unit;
+    $('#c-name').textContent=state.name; $('#c-unit').textContent=(state.org?state.org+' · ':'')+state.unit;
     $('#c-cat').textContent=catName(state.cat);
     $('#c-score').textContent=pct+'% ('+ok+' из '+total+'), время '+fmt(state.elapsed)+' · выходов из приложения: '+(state.switches||0);
     const st=$('#c-status'); st.textContent=pass?'СДАН':'НЕ СДАН'; st.className=pass?'st-pass':'st-fail';
     $('#c-date').textContent=ds;
     cert.classList.remove('hidden'); pr.classList.remove('hidden');
-    saveHist({d:now.toISOString(),name:state.name,unit:state.unit,cat:catName(state.cat),pct,ok,total,sec:state.elapsed,pass,sw:(state.switches||0)});
+    saveHist({d:now.toISOString(),name:state.name,unit:state.unit,org:state.org||'',cat:catName(state.cat),pct,ok,total,sec:state.elapsed,pass,sw:(state.switches||0)});
     reportExam(pct, ok, total, pass);
   } else { cert.classList.add('hidden'); pr.classList.add('hidden'); }
 
@@ -577,7 +622,7 @@ function renderLog(){
     const d=new Date(r.d).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
     return '<div class="log-item '+(r.pass?'p':'f')+'"><div class="li-top"><b>'+r.name+'</b>'+
       '<span class="li-pct '+(r.pass?'p':'f')+'">'+r.pct+'%</span></div>'+
-      '<div class="li-sub">'+r.cat+' · '+r.unit+'</div>'+
+      '<div class="li-sub">'+r.cat+' · '+(r.org?r.org+' · ':'')+r.unit+'</div>'+
       '<div class="li-sub">'+d+' · '+(r.pass?'сдан':'не сдан')+' · '+r.ok+'/'+r.total+((r.sw||0)>0?' · ⚠ уходов '+r.sw:'')+'</div></div>';
   }).join('');
 }

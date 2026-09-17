@@ -1,5 +1,5 @@
 /* Service worker — офлайн-кэш тренажёра СУБП */
-const CACHE = 'subp-trainer-v23';
+const CACHE = 'subp-trainer-v24';
 const ASSETS = [
   './','./index.html','./styles.css','./questions.js','./license.js','./app.js',
   './manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'
