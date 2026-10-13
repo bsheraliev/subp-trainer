@@ -148,6 +148,8 @@ body.exam-lock, body.exam-lock *{-webkit-user-select:none;user-select:none}
 .guide-bar span{flex:1;min-width:0}
 .guide-ov iframe{flex:1;width:100%;min-height:0;border:0;background:var(--bg)}
 body.guide-open{overflow:hidden}
+/* пока инструкция открыта, плавающая кнопка обращений (feedback.js) не лежит поверх неё */
+body.guide-open .fbk-btn{display:none!important}
 
 /* Таймер */
 .timer{font-variant-numeric:tabular-nums;font-weight:700;color:var(--amber);font-size:14px}
