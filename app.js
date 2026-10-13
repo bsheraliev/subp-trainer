@@ -211,6 +211,7 @@ function renderHome(){
         : (subj.general
             ? 'Экзамен: '+EXAM_SPECIAL+' профильных + '+EXAM_GENERAL+' общих = 25 вопросов · лимит '+(EXAM_TIME/60)+' мин · проходной 75% · справка.'
             : 'Экзамен: 25 вопросов по всему курсу · лимит '+(EXAM_TIME/60)+' мин · проходной 75% · справка.'));
+  $('#home-guide').classList.toggle('hidden', !(state.mode==='exam' && EXAM_ENABLED));
 
   const wrap=$('#cats'); wrap.innerHTML='';
   licBannerInto(wrap);
@@ -627,8 +628,31 @@ function renderLog(){
   }).join('');
 }
 
+/* ---------- Проводник (guide.html) поверх приложения ----------
+   Открывается в слое, а не переходом на другую страницу: введённые ФИО и уже
+   запрошенный код остаются на месте. step — метка вида 'candidate-5' (вкладка и шаг). */
+function openGuide(step){
+  const ov=$('#guide-ov'), fr=$('#guide-frame'), url='guide.html#'+(step||'candidate');
+  if(!fr.dataset.loaded){ fr.src=url; fr.dataset.loaded='1'; }
+  else{ try{ fr.contentWindow.location.replace(new URL(url, location.href).href); }catch(e){ fr.src=url; } }
+  ov.classList.remove('hidden'); document.body.classList.add('guide-open');
+  try{ history.pushState({guide:1},''); }catch(e){}      // кнопка «назад» телефона закроет инструкцию
+  $('#guide-close').focus();
+}
+function closeGuide(fromBack){
+  const ov=$('#guide-ov'); if(ov.classList.contains('hidden')) return;
+  ov.classList.add('hidden'); document.body.classList.remove('guide-open');
+  if(!fromBack && history.state && history.state.guide){ try{ history.back(); }catch(e){} }
+}
+
 /* ---------- Навигация ---------- */
 function init(){
+  $('#subj-guide').onclick=()=>openGuide('candidate');
+  $('#home-guide').onclick=()=>openGuide('candidate-4');
+  $('#id-guide').onclick=()=>openGuide('candidate-5');
+  $('#guide-close').onclick=()=>closeGuide(false);
+  window.addEventListener('popstate',()=>closeGuide(true));
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeGuide(false); });
   $('#mode-train').onclick=()=>{state.mode='train';renderHome();};
   $('#mode-exam').onclick=()=>{state.mode='exam';renderHome();};
   $('#in-name').oninput=validateId; $('#in-unit').oninput=validateId;
