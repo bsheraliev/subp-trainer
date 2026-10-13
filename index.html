@@ -27,6 +27,7 @@
   <main id="screen-subj">
     <p class="lead">Выберите предмет тестирования.</p>
     <div id="subjects"></div>
+    <button id="subj-guide" class="btn sec">📖 Как проходить экзамен — пошагово</button>
     <button id="subj-log" class="btn sec">📋 Журнал прохождений</button>
     <button id="subj-ai" class="btn sec">⚙ ИИ-проверка открытых ответов</button>
     <a class="btn sec" href="https://t.me/Ori_gemini_bot" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none">✈️ Связаться в Telegram</a>
@@ -40,6 +41,7 @@
       <button id="mode-exam">Экзамен</button>
     </div>
     <p id="mode-hint" class="mode-hint"></p>
+    <button type="button" id="home-guide" class="link-btn hidden">📖 Как проходит экзамен — пошагово</button>
     <div class="section-title" id="sec-title">Категория персонала</div>
     <div id="cats"></div>
     <button id="open-log" class="btn sec">📋 Журнал прохождений</button>
@@ -63,6 +65,7 @@
         <input id="in-unit" type="text" placeholder="напр. Управление сертификации и надзора">
       </label>
       <p class="id-note">Экзамен: 25 вопросов · лимит времени · проходной 75%. Нажмите «Начать» — экзаменатор получит персональный код и сообщит его вам.</p>
+      <button type="button" id="id-guide" class="link-btn">📖 Как получить код и начать — пошагово</button>
       <button id="id-start" class="btn" disabled>Начать экзамен</button>
       <div id="approve-block" class="hidden">
         <p id="approve-msg" class="id-note"></p>
@@ -134,9 +137,18 @@
   <footer class="foot">Основа: ИКАО Приложение&nbsp;19 · Doc&nbsp;9859 · Учебный тренажёр</footer>
 </div>
 
+<!-- ПРОВОДНИК: открывается поверх приложения, поэтому введённые данные и запрос кода не теряются -->
+<div id="guide-ov" class="guide-ov hidden" role="dialog" aria-modal="true" aria-label="Инструкция: как проходить экзамен">
+  <div class="guide-bar">
+    <span>Инструкция</span>
+    <button type="button" id="guide-close" class="ghost-btn">✕ Закрыть</button>
+  </div>
+  <iframe id="guide-frame" title="Проводник по авиатренажёру"></iframe>
+</div>
+
 <script src="questions.js"></script>
 <script src="license.js"></script>
 <script src="app.js"></script>
-<script src="feedback.js" data-app="subp" data-version="v26" defer></script>
+<script src="feedback.js" data-app="subp" data-version="v27" defer></script>
 </body>
 </html>
