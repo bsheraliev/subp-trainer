@@ -277,14 +277,17 @@ function pick(cat){
   if(state.mode==='exam'){
     $('#id-cat').textContent=(curSubj().id==='subp'?'Категория: ':'Предмет: ')+catName(cat);
     fillOrgs();
-    $('#in-name').value=state.name; $('#in-unit').value=state.unit; setOrg(state.org||'');
+    $('#in-name').value=state.name; $('#in-contact').value=state.contact||''; $('#in-unit').value=state.unit; setOrg(state.org||'');
     resetApprove(); validateId();
     show('id'); setBack('← Меню', renderHome);
   } else startQuiz();
 }
 function validateId(){
-  $('#id-start').disabled = !($('#in-name').value.trim() && curOrg() && $('#in-unit').value.trim());
+  $('#id-start').disabled = !($('#in-name').value.trim() && contactOk($('#in-contact').value) && curOrg() && $('#in-unit').value.trim());
 }
+/* Телефон (не меньше 7 цифр) или ник Telegram (@username, 5–32 знака) */
+function contactOk(v){ v=(v||'').trim(); return (v.replace(/\D/g,'').length>=7) || /^@?[A-Za-z][A-Za-z0-9_]{4,31}$/.test(v); }
+function contactNorm(v){ v=(v||'').trim(); return /^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(v) ? '@'+v : v; }
 /* Выпадающий список организаций + свободный ввод «Другая…» */
 function fillOrgs(){
   const sel=$('#in-org'); if(!sel) return;
@@ -321,14 +324,14 @@ function resetApprove(){
   $('#in-approve').value='';
 }
 async function requestExamCode(){
-  const name=$('#in-name').value.trim(), unit=$('#in-unit').value.trim(), org=curOrg();
+  const name=$('#in-name').value.trim(), unit=$('#in-unit').value.trim(), org=curOrg(), contact=contactNorm($('#in-contact').value);
   if(!name||!unit||!org) return;
   state.org=org;
   const btn=$('#id-start'), label=btn.textContent;
   btn.disabled=true; btn.textContent='Отправляю запрос…';
   try{
     const r=await fetch(aiUrl(), { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify({ action:'request', name, unit, org, subject:curSubj().name, cat:state.cat, catName:catName(state.cat) }) });
+      body:JSON.stringify({ action:'request', name, contact, unit, org, subject:curSubj().name, cat:state.cat, catName:catName(state.cat) }) });
     if(!r.ok) throw new Error('http '+r.status);
     const d=await r.json();
     if(!d.ok||!d.reqId) throw new Error(d.error||'нет ответа сервера');
@@ -375,7 +378,7 @@ function buildList(cat){
   return shuffle(QUESTIONS[cat]);
 }
 function startQuiz(){
-  if(state.mode==='exam'){ state.name=$('#in-name').value.trim(); state.unit=$('#in-unit').value.trim(); state.org=curOrg()||state.org; }
+  if(state.mode==='exam'){ state.name=$('#in-name').value.trim(); state.contact=contactNorm($('#in-contact').value); state.unit=$('#in-unit').value.trim(); state.org=curOrg()||state.org; }
   state.list=buildList(state.cat); state.i=0; state.correct=0; state.wrong=[]; state.answered=false; state.finished=false;
   state.startTs=Date.now(); state.elapsed=0; state.switches=0; state.qTimer=null;
   show('quiz'); setBack('← Меню', renderHome);
@@ -429,7 +432,7 @@ function blockIfExam(e){ if(document.body.classList.contains('exam-lock')){ e.pr
 // Отчёт экзаменатору о результате (best-effort, только экзамен)
 function reportExam(pct, ok, total, pass){
   try{ fetch(aiUrl(), { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body:JSON.stringify({ action:'report', reqId:state.reqId, name:state.name, unit:state.unit, org:state.org||'',
+    body:JSON.stringify({ action:'report', reqId:state.reqId, name:state.name, contact:state.contact||'', unit:state.unit, org:state.org||'',
       subject:curSubj().name, catName:catName(state.cat), pct, ok, total, pass, switches:(state.switches||0), sec:state.elapsed }) }); }catch(e){}
 }
 
@@ -655,7 +658,7 @@ function init(){
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeGuide(false); });
   $('#mode-train').onclick=()=>{state.mode='train';renderHome();};
   $('#mode-exam').onclick=()=>{state.mode='exam';renderHome();};
-  $('#in-name').oninput=validateId; $('#in-unit').oninput=validateId;
+  $('#in-name').oninput=validateId; $('#in-contact').oninput=validateId; $('#in-unit').oninput=validateId;
   $('#id-start').onclick=requestExamCode; $('#approve-btn').onclick=confirmExamCode; $('#id-cancel').onclick=renderHome;
   $('#q-next').onclick=next;
   $('#res-retry').onclick=()=>{ if(state.mode==='exam') pick(state.cat); else startQuiz(); };
