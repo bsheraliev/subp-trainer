@@ -25,11 +25,10 @@
 
   <!-- ЭКРАН ВЫБОРА ПРЕДМЕТА -->
   <main id="screen-subj">
-    <p class="lead">Выберите предмет тестирования.</p>
+    <p class="lead"><b>Для чего:</b> подготовка и экзамен по СУБП (ИКАО Приложение&nbsp;19, Doc&nbsp;9859) и человеческому фактору.<br><b>С чего начать:</b> выберите предмет ниже, затем «Тренажёр» — потренироваться или «Экзамен» — сдать с кодом экзаменатора.</p>
     <div id="subjects"></div>
     <button id="subj-guide" class="btn sec">📖 Как проходить экзамен — пошагово</button>
     <button id="subj-log" class="btn sec">📋 Журнал прохождений</button>
-    <button id="subj-ai" class="btn sec">⚙ ИИ-проверка открытых ответов</button>
     <a class="btn sec" href="https://t.me/Ori_gemini_bot" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none">✈️ Связаться в Telegram</a>
   </main>
 
@@ -134,10 +133,12 @@
     <div class="section-title">Журнал прохождений (на этом устройстве)</div>
     <div id="log-list"></div>
     <button id="log-clear" class="btn sec">Очистить журнал</button>
+    <!-- настройка для экзаменатора/администратора: убрана с первого экрана -->
+    <button id="subj-ai" class="btn sec">⚙ ИИ-проверка открытых ответов (для экзаменатора)</button>
     <button id="log-back" class="btn sec">В меню</button>
   </main>
 
-  <footer class="foot">Основа: ИКАО Приложение&nbsp;19 · Doc&nbsp;9859 · Учебный тренажёр</footer>
+  <footer class="foot">Основа: ИКАО Приложение&nbsp;19 · Doc&nbsp;9859 · Учебный тренажёр · <span id="app-ver">Версия v30</span></footer>
 </div>
 
 <!-- ПРОВОДНИК: открывается поверх приложения, поэтому введённые данные и запрос кода не теряются -->
@@ -152,6 +153,6 @@
 <script src="questions.js"></script>
 <script src="license.js"></script>
 <script src="app.js"></script>
-<script src="feedback.js" data-app="subp" data-version="v29" defer></script>
+<script src="feedback.js" data-app="subp" data-version="v30" defer></script>
 </body>
 </html>
