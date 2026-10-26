@@ -206,7 +206,7 @@ body.guide-open .fbk-btn{display:none!important}
 .lic-hero{font-size:46px;margin:4px 0 6px}
 .lic-card h2{margin:0 0 8px;font-size:19px;color:var(--txt)}
 .lic-sub{color:var(--muted);font-size:13px;line-height:1.5;margin:0 0 16px}
-#lic-code{width:100%;box-sizing:border-box;background:var(--panel2);border:1.5px solid var(--line);color:var(--txt);border-radius:12px;padding:13px;font-size:15px;text-align:center;letter-spacing:.5px}
+#lic-code,#tg-nick{width:100%;box-sizing:border-box;background:var(--panel2);border:1.5px solid var(--line);color:var(--txt);border-radius:12px;padding:13px;font-size:15px;text-align:center;letter-spacing:.5px}
 #lic-code:focus{outline:none;border-color:var(--accent)}
 .lic-primary{width:100%;box-sizing:border-box;margin-top:10px;background:var(--accent);color:#04140f;border:none;border-radius:12px;padding:13px;font-size:15px;font-weight:700;cursor:pointer}
 .lic-primary:disabled{opacity:.6;cursor:default}

@@ -66,6 +66,43 @@ const EXAM_SPECIAL = 10;     // профильных вопросов в экз�
 const PASS = 0.75;           // проходной порог
 const EXAM_TIME = 20 * 60;   // лимит экзамена, сек
 const CONTACT_TG = 'https://t.me/Ori_gemini_bot';   // контакт/поддержка в Telegram
+const CONTACT_TG_APP = 'tg://resolve?domain=Ori_gemini_bot';   // то же — сразу в приложение Telegram
+const CONTACT_TG_NICK = '@Ori_gemini_bot';
+/* У части провайдеров t.me не открывается (DNS_PROBE…NXDOMAIN). Поэтому ссылки с data-tg
+   открывают приложение Telegram напрямую по tg://; если оно не открылось за 1,5 с —
+   показываем ник бота с кнопкой «Скопировать» (t.me там — лишь запасная ссылка). */
+document.addEventListener('click',e=>{
+  const a=e.target.closest&&e.target.closest('a[data-tg]'); if(!a) return;
+  e.preventDefault();
+  let left=false; const onHide=()=>{ if(document.hidden) left=true; };
+  document.addEventListener('visibilitychange',onHide);
+  window.addEventListener('blur',onHide);
+  window.location.href=CONTACT_TG_APP;
+  setTimeout(()=>{ document.removeEventListener('visibilitychange',onHide); window.removeEventListener('blur',onHide);
+    if(!left&&!document.hidden) tgFallback(); },1500);
+});
+function tgFallback(){
+  if(document.getElementById('tg-modal')) return;
+  const m=document.createElement('div'); m.className='lic-modal'; m.id='tg-modal';
+  m.innerHTML='<div class="lic-card">'+
+    '<button class="lic-x" aria-label="Закрыть">✕</button>'+
+    '<div class="lic-hero">✈️</div>'+
+    '<h2>Напишите нам в Telegram</h2>'+
+    '<p class="lic-sub">Не удалось открыть Telegram автоматически. Откройте приложение Telegram, нажмите поиск и введите:</p>'+
+    '<input id="tg-nick" type="text" readonly value="'+CONTACT_TG_NICK+'" style="font-weight:700">'+
+    '<button id="tg-copy" class="lic-primary">Скопировать</button>'+
+    '<p class="lic-note"><a href="'+CONTACT_TG+'" target="_blank" rel="noopener" style="color:inherit">Открыть через t.me</a> — если сайт t.me у вас доступен.</p>'+
+    '</div>';
+  document.body.appendChild(m);
+  const close=()=>m.remove();
+  m.querySelector('.lic-x').onclick=close;
+  m.onclick=(e)=>{ if(e.target===m) close(); };
+  m.querySelector('#tg-copy').onclick=()=>{
+    const inp=m.querySelector('#tg-nick'), btn=m.querySelector('#tg-copy'), ok=()=>{ btn.textContent='Скопировано ✓'; };
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(CONTACT_TG_NICK).then(ok,()=>{ inp.select(); document.execCommand('copy'); ok(); });
+    else { inp.select(); document.execCommand('copy'); ok(); }
+  };
+}
 const HIST_KEY = 'subp_history';
 const HIST_MAX = 60;
 
@@ -196,7 +233,7 @@ function renderUnlock(){
     '<button id="lic-go" class="lic-primary">Разблокировать</button>'+
     '<div id="lic-msg" class="lic-msg"></div>'+
     '<p class="lic-note">Нет кода? Обратитесь к вашей организации за кодом доступа.</p>'+
-    '<a class="lic-primary" style="display:block;text-align:center;text-decoration:none;margin-top:8px" href="'+CONTACT_TG+'" target="_blank" rel="noopener">✈️ Связаться в Telegram</a>'+
+    '<a class="lic-primary" style="display:block;text-align:center;text-decoration:none;margin-top:8px" href="'+CONTACT_TG+'" data-tg target="_blank" rel="noopener">✈️ Связаться в Telegram</a>'+
     '</div>';
   document.body.appendChild(m);
   const close=()=>m.remove();
