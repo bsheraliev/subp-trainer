@@ -1,6 +1,65 @@
 /* Тренажёр СУБП — логика приложения */
 'use strict';
 
+/* ДИАГНОСТИКА — текст ошибки на экране, а не «замершие» кнопки. Урок обращения Ш-2 Shohin (2026-10-14):
+   в Telegram для iPhone чужой скрипт подменил глобальную функцию, всё перестало работать, а причину
+   с телефона не было видно сутки. Код замкнут в функции и не опирается на глобальные имена
+   приложения — подмена их диагностику не ломает. Наружу — одно имя __subpDiag. */
+(() => {
+  const log = [];
+  let own = [], box = null;
+  const note = m => { if (log.length < 8 && !log.includes(m)) log.push(m); };
+  const text = err => {
+    const ua = (navigator.userAgent.match(/(iPhone OS|iPad; CPU OS|Android|Windows NT|Mac OS X)[ \d._]*/) || [''])[0].trim();
+    const ver = document.getElementById('app-ver'), scr = document.querySelector('main:not(.hidden)');
+    const lines = [`СУБП ${ver ? ver.textContent : '?'} · ${scr ? scr.id.replace('screen-', 'экран ') : '—'} · ${ua || '?'}` +
+      (/Telegram/i.test(navigator.userAgent) || window.TelegramWebviewProxy ? ' · внутри Telegram' : '')];
+    if (err) {
+      const first = `${err.name || 'Error'}: ${err.message}`;   // Chrome повторяет её первой строкой стека
+      lines.push(first, ...String(err.stack || '').split('\n').map(s => s.trim()).filter(s => s && s !== first).slice(0, 4));
+    }
+    if (log.length) lines.push('журнал: ' + log.join('; '));
+    const lost = own.filter(k => typeof window[k] !== 'function');
+    if (lost.length) lines.push('перезаписаны чужим скриптом: ' + lost.slice(0, 12).join(', '));
+    return lines.join('\n');
+  };
+  const copyOld = (s, ok) => {
+    const ta = document.createElement('textarea');
+    ta.value = s; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;opacity:0';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, s.length);
+    try { if (document.execCommand('copy')) ok(); } catch (e) {}
+    ta.remove();
+  };
+  const show = err => {
+    if (box) { box.querySelector('pre').textContent = text(err); return; }
+    box = document.createElement('div');
+    box.className = 'diagp'; box.setAttribute('role', 'alert');
+    box.innerHTML = '<b>⚠️ Что-то пошло не так</b><p>Сделайте снимок экрана или скопируйте текст и отправьте через «Сообщить об ошибке».</p><pre></pre>' +
+      '<div class="diagp-row"><button type="button">Скопировать</button><button type="button">Перезапустить</button><button type="button">Закрыть</button></div>';
+    box.querySelector('pre').textContent = text(err);
+    const [bCopy, bReload, bClose] = box.querySelectorAll('button');
+    bCopy.onclick = () => {
+      const s = box.querySelector('pre').textContent, ok = () => { bCopy.textContent = 'Скопировано ✓'; };
+      try { navigator.clipboard.writeText(s).then(ok, () => copyOld(s, ok)); } catch (e) { copyOld(s, ok); }
+    };
+    bReload.onclick = () => location.reload();
+    bClose.onclick = () => { box.remove(); box = null; };
+    document.body.appendChild(box);
+  };
+  addEventListener('error', e => {
+    if (!e.message || e.message === 'Script error.') return;            // чужой домен — деталей нет
+    note(e.message + (e.lineno ? ` @${String(e.filename || '').split('/').pop() || 'страница'}:${e.lineno}` : ''));
+    // панель — только для ошибок нашего кода (файлы и обработчики со своего адреса); чужие лишь в журнал
+    if (e.filename && e.filename.indexOf(location.origin) === 0) show(e.error || { name: 'Error', message: e.message });
+  });
+  addEventListener('unhandledrejection', e => note('promise: ' + ((e.reason && e.reason.message) || e.reason)));
+  window.__subpDiag = {
+    // снимок своих глобальных функций после запуска — потом видно, какую из них подменили
+    snap() { own = Object.keys(window).filter(k => { try { return typeof window[k] === 'function'; } catch (e) { return false; } }); },
+    show, text
+  };
+})();
+
 const EXAM_ENABLED = true;   // экзамен включён; старт возможен после ввода данных и одобрения администратора (код).
 const EXAM_GENERAL = 15;     // общих вопросов в экзамене
 const EXAM_SPECIAL = 10;     // профильных вопросов в экзамене
@@ -674,3 +733,4 @@ function init(){
   if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
 document.addEventListener('DOMContentLoaded',init);
+document.addEventListener('DOMContentLoaded',()=>{ if(window.__subpDiag) __subpDiag.snap(); });

@@ -232,35 +232,38 @@ body{background:var(--bg);color:var(--fg);font-family:var(--font-body);line-heig
 </div>
 
 <script>
+/* Всё внутри функции: в Telegram для iPhone чужой скрипт перезаписывает общие
+   имена окна (head, body…), поэтому глобальных имён у проводника нет. */
+(()=>{
 "use strict";
 const $=s=>document.querySelector(s);
 const APPLOGO='<svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3zm-1 14-4-4 1.4-1.4L11 13.2l4.6-4.6L17 10l-6 6z"/></svg>';
 function appTop(sub){return `<div class="scr-top"><div class="scr-logo">${APPLOGO}</div><div class="scr-brand"><b>Авиатренажёр</b><span>${sub||'СУБП · Человеческий фактор'}</span></div></div>`;}
-function body(inner){return `<div class="scr-body">${inner}</div>`;}
+function sbBody(inner){return `<div class="scr-body">${inner}</div>`;}
 function tap(pos){return `<span class="tap" style="${pos||'right:8px;top:50%;margin-top:-15px'}"></span>`;}
 
 const TRACKS={
 candidate:[
  {eye:'Шаг 1',t:'Откройте приложение',d:'Зайдите по ссылке или с ярлыка на телефоне. Тренажёр работает офлайн и ставится как обычное приложение.',
   note:['📲','Один раз нажмите «Установить» — появится иконка на экране, интернет дальше не нужен.'],
-  scr:appTop()+body(`<div class="scr-lead">Выберите предмет тестирования.</div>
+  scr:appTop()+sbBody(`<div class="scr-lead">Выберите предмет тестирования.</div>
    <div class="mrow hl"><span class="mi">🛡️</span><div><b>СУБП</b><span>Управление безопасностью полётов</span></div></div>
    <div class="mrow"><span class="mi">🧠</span><div><b>Человеческий фактор</b><span>Психология, ошибки, эргономика</span></div></div>
    <div class="mcard" style="margin-top:auto;text-align:center;font-size:9px;color:var(--app-muted)">bsheraliev.github.io/subp-trainer</div>`)},
  {eye:'Шаг 2',t:'Выберите предмет',d:'СУБП (система управления безопасностью полётов) или Человеческий фактор — смотря по чему экзамен.',
-  scr:appTop()+body(`<div class="scr-lead">Выберите предмет тестирования.</div>
+  scr:appTop()+sbBody(`<div class="scr-lead">Выберите предмет тестирования.</div>
    <div class="mrow hl"><span class="mi">🛡️</span><div><b>СУБП</b><span>ИКАО Прил. 19</span></div>${tap()}</div>
    <div class="mrow"><span class="mi">🧠</span><div><b>Человеческий фактор</b><span>ИКАО Doc 9683</span></div></div>
    <div class="mrow"><span class="mi">📋</span><div><b>Журнал прохождений</b></div></div>`)},
  {eye:'Шаг 3',t:'Переключитесь на «Экзамен»',d:'Тренажёр — учиться без ограничений. Экзамен — с оценкой, лимитом времени и справкой о прохождении.',
   note:['🎯','Для аттестации нужен именно режим «Экзамен».'],
-  scr:appTop('СУБП')+body(`<div class="mmodes"><div class="mmode">Тренажёр</div><div class="mmode on">Экзамен${tap()}</div></div>
+  scr:appTop('СУБП')+sbBody(`<div class="mmodes"><div class="mmode">Тренажёр</div><div class="mmode on">Экзамен${tap()}</div></div>
    <div class="scr-lead">Экзамен: 25 вопросов · лимит времени · проходной 75%.</div>
    <div class="mrow"><span class="mi">🗼</span><div><b>Диспетчеры УВД</b></div></div>
    <div class="mrow"><span class="mi">✈️</span><div><b>Лётный экипаж</b></div></div>
    <div class="mrow"><span class="mi">🧳</span><div><b>Бортпроводники</b></div></div>`)},
  {eye:'Шаг 4',t:'Выберите свою категорию',d:'Нажмите категорию персонала, по которой сдаёте: диспетчер, лётный экипаж, бортпроводник, аэропорт и т. д.',
-  scr:appTop('СУБП')+body(`<div class="mmodes"><div class="mmode">Тренажёр</div><div class="mmode on">Экзамен</div></div>
+  scr:appTop('СУБП')+sbBody(`<div class="mmodes"><div class="mmode">Тренажёр</div><div class="mmode on">Экзамен</div></div>
    <div class="scr-lead">Категория персонала</div>
    <div class="mrow"><span class="mi">🗼</span><div><b>Диспетчеры УВД</b></div></div>
    <div class="mrow hl"><span class="mi">✈️</span><div><b>Лётный экипаж</b></div>${tap()}</div>
@@ -268,7 +271,7 @@ candidate:[
    <div class="mrow"><span class="mi">🛫</span><div><b>Персонал аэропорта</b></div></div>`)},
  {eye:'Шаг 5',t:'Введите данные',d:'ФИО, телефон или Telegram, организацию (выбрать из списка) и подразделение/должность. По телефону экзаменатор поймёт, кто просит код.',
   note:['🏢','«Организация» — это выпадающий список: АГА, Сомон Эйр, Шохин Эйр, аэропорты и др. Нет в списке — «Другая организация…».'],
-  scr:appTop('Данные для экзамена')+body(`
+  scr:appTop('Данные для экзамена')+sbBody(`
    <div class="mfield">Фамилия, имя, отчество<div class="inp">Иванов Иван Иванович</div></div>
    <div class="mfield">Телефон или Telegram<div class="inp">+992 90 123 45 67</div></div>
    <div class="mfield">Организация / компания<div class="inp sel">Сомон Эйр (Somon Air) ▾</div>${tap('right:8px;bottom:0')}</div>
@@ -276,19 +279,19 @@ candidate:[
    <div class="mbtn" style="margin-top:4px">Начать экзамен</div>`)},
  {eye:'Шаг 6',t:'Запросите код',d:'Нажмите «Начать экзамен». Экзаменатору тут же придёт персональный код — экзамен не начнётся без него.',
   note:['🔒','Так исключается сдача без ведома экзаменатора.'],
-  scr:appTop('Данные для экзамена')+body(`
+  scr:appTop('Данные для экзамена')+sbBody(`
    <div class="mfield">Фамилия, имя, отчество<div class="inp">Иванов Иван Иванович</div></div>
    <div class="mfield">Организация / компания<div class="inp">Сомон Эйр (Somon Air)</div></div>
    <div class="mbtn">Начать экзамен${tap()}</div>
    <div class="mcard" style="font-size:9px;color:var(--app-muted);line-height:1.5">Запрос <b style="color:var(--app-fg)">№R482</b> отправлен экзаменатору. Получите код и введите ниже.</div>`)},
  {eye:'Шаг 7',t:'Введите код от экзаменатора',d:'Экзаменатор продиктует код. Введите его и нажмите «Подтвердить и начать». Код действует 15 минут.',
-  scr:appTop('Данные для экзамена')+body(`
+  scr:appTop('Данные для экзамена')+sbBody(`
    <div class="tg"><div class="tgh">Экзаменатор</div>Ваш код — <b>4 8 2 7</b></div>
    <div class="mfield">Код от экзаменатора<div class="inp sel" style="justify-content:center;letter-spacing:.3em;font-family:var(--font-mono)">4827</div></div>
    <div class="mbtn">Подтвердить и начать${tap()}</div>`)},
  {eye:'Шаг 8',t:'Проходите экзамен',d:'25 вопросов с лимитом времени. Проходной балл — 75%. Отвечайте спокойно и по порядку.',
   note:['⚠️','Не выходите из приложения и не копируйте текст — уходы со вкладки фиксируются и видны экзаменатору.',true],
-  scr:appTop('СУБП')+body(`<div class="mhead"><span>Вопрос 7 / 25</span><span class="chip">⏱ 14:20</span></div>
+  scr:appTop('СУБП')+sbBody(`<div class="mhead"><span>Вопрос 7 / 25</span><span class="chip">⏱ 14:20</span></div>
    <div class="bar"><i style="width:28%"></i></div>
    <div class="mcard" style="font-size:10px;line-height:1.45">Что является главной целью СУБП (SMS)?</div>
    <div class="mrow"><div><b>Управление рисками безопасности</b></div></div>
@@ -297,7 +300,7 @@ candidate:[
    <div style="display:flex;gap:6px;justify-content:center"><span class="chip warn">⚠ уходов: 0</span><span class="chip">⏳ 32 с</span></div>`)},
  {eye:'Готово',t:'Результат и справка',d:'Сразу видите балл и статус. Справку о прохождении можно распечатать или сохранить в PDF.',
   note:['📤','Результат автоматически уходит экзаменатору в Telegram и в общую таблицу — пересылать ничего не нужно.'],
-  scr:appTop('Результат')+body(`<div class="ring"><svg viewBox="0 0 92 92"><circle cx="46" cy="46" r="38" fill="none" stroke="var(--app-line)" stroke-width="9"/><circle cx="46" cy="46" r="38" fill="none" stroke="var(--app-accent)" stroke-width="9" stroke-linecap="round" stroke-dasharray="238.8" stroke-dashoffset="28.6" transform="rotate(-90 46 46)"/><text x="46" y="44" text-anchor="middle" class="pct" fill="var(--app-fg)" font-size="20">88%</text><text x="46" y="60" text-anchor="middle" fill="var(--app-muted)" font-size="8">22 из 25</text></svg></div>
+  scr:appTop('Результат')+sbBody(`<div class="ring"><svg viewBox="0 0 92 92"><circle cx="46" cy="46" r="38" fill="none" stroke="var(--app-line)" stroke-width="9"/><circle cx="46" cy="46" r="38" fill="none" stroke="var(--app-accent)" stroke-width="9" stroke-linecap="round" stroke-dasharray="238.8" stroke-dashoffset="28.6" transform="rotate(-90 46 46)"/><text x="46" y="44" text-anchor="middle" class="pct" fill="var(--app-fg)" font-size="20">88%</text><text x="46" y="60" text-anchor="middle" fill="var(--app-muted)" font-size="8">22 из 25</text></svg></div>
    <div style="text-align:center"><span class="chip ok" style="font-size:11px;padding:5px 12px">✓ Тест сдан</span></div>
    <div class="mcard" style="font-size:9px;line-height:1.7"><div style="display:flex;justify-content:space-between"><span style="color:var(--app-muted)">ФИО</span><b>Иванов И. И.</b></div><div style="display:flex;justify-content:space-between"><span style="color:var(--app-muted)">Организация</span><b>Сомон Эйр</b></div><div style="display:flex;justify-content:space-between"><span style="color:var(--app-muted)">Статус</span><b style="color:var(--app-accent)">СДАН</b></div></div>
    <div class="mbtn ghost">🖨 Печать / Сохранить PDF</div>`)}
@@ -305,24 +308,24 @@ candidate:[
 examiner:[
  {eye:'Один раз',t:'Подключение к Telegram',d:'Экзаменатор получает коды и результаты в Telegram. Бот подключается один раз — это настраивает владелец, вам ничего делать не нужно.',
   note:['✅','Если коды и результаты уже приходят — всё настроено, переходите к следующему шагу.'],
-  scr:appTop('Экзаменатор')+body(`<div class="mcard" style="text-align:center"><div style="font-size:30px">🤖</div><b style="font-size:11px">Бот экзаменатора</b><div style="font-size:9px;color:var(--app-muted);margin-top:3px">подключён</div></div>
+  scr:appTop('Экзаменатор')+sbBody(`<div class="mcard" style="text-align:center"><div style="font-size:30px">🤖</div><b style="font-size:11px">Бот экзаменатора</b><div style="font-size:9px;color:var(--app-muted);margin-top:3px">подключён</div></div>
    <div class="tg"><div class="tgh">Бот-экзаменатор</div>Готов принимать запросы на экзамен ✈️</div>
    <div class="scr-lead" style="margin-top:auto">Коды и результаты приходят сюда, в Telegram.</div>`)},
  {eye:'Шаг 1',t:'Вам приходит запрос',d:'Когда кандидат нажимает «Начать экзамен», в Telegram приходит запрос: ФИО, телефон или Telegram кандидата, организация, предмет и персональный код.',
-  scr:appTop('Экзаменатор')+body(`<div class="tg"><div class="tgh">🎓 Запрос на экзамен (№R482)</div>
+  scr:appTop('Экзаменатор')+sbBody(`<div class="tg"><div class="tgh">🎓 Запрос на экзамен (№R482)</div>
    ФИО: <b>Иванов Иван Иванович</b><br>Связь: <b>+992 90 123 45 67</b><br>Организация: <b>Сомон Эйр</b><br>Подразделение: <b>Лётный отряд</b><br>Предмет: <b>СУБП · Лётный экипаж</b><br><br>🔑 Код для кандидата: <span class="k">4827</span><br><span style="color:#8aa0b5">(действует 15 минут)</span></div>`)},
  {eye:'Шаг 2',t:'Продиктуйте код',d:'Назовите кандидату код из сообщения. Он одноразовый и действует 15 минут — после ввода экзамен начнётся.',
   note:['🔑','Один код — один экзамен. На новую попытку придёт новый код.'],
-  scr:appTop('Экзаменатор')+body(`<div class="tg"><div class="tgh">🎓 Запрос на экзамен (№R482)</div>Иванов Иван Иванович · Сомон Эйр<br>🔑 Код: <span class="k">4827</span></div>
+  scr:appTop('Экзаменатор')+sbBody(`<div class="tg"><div class="tgh">🎓 Запрос на экзамен (№R482)</div>Иванов Иван Иванович · Сомон Эйр<br>🔑 Код: <span class="k">4827</span></div>
    <div class="speech">«Ваш код — <span class="dict">4 8 2 7</span>»</div>
    <div class="scr-lead" style="margin-top:auto">Кандидат вводит код у себя и начинает экзамен.</div>`)},
  {eye:'Шаг 3',t:'Получаете результат',d:'Как только кандидат закончил, приходит результат: балл, сдан/не сдан, время и число выходов из приложения.',
   note:['⚠️','«Выходов из приложения» больше нуля — кандидат сворачивал экзамен. Повод присмотреться.',true],
-  scr:appTop('Экзаменатор')+body(`<div class="tg"><div class="tgh">📋 Результат экзамена (№R482)</div>
+  scr:appTop('Экзаменатор')+sbBody(`<div class="tg"><div class="tgh">📋 Результат экзамена (№R482)</div>
    ФИО: <b>Иванов Иван Иванович</b><br>Организация: <b>Сомон Эйр</b><br>Предмет: <b>СУБП · Лётный экипаж</b><br>Результат: <b>88% (22/25)</b> — <span class="k">СДАН ✅</span><br>Время: <b>8:14</b><br>Выходов из приложения: <b>0</b></div>`)},
  {eye:'Сводка',t:'Все результаты — в таблице',d:'Каждый экзамен попадает в общую Google-таблицу и на дашборд: сводка по приложениям и по организациям.',
   note:['📊','Отдельно подсвечиваются экзамены с уходами со вкладки — подозрение на списывание.'],
-  scr:appTop('Дашборд')+body(`<div class="mcard" style="padding:9px"><div class="mhead" style="margin-bottom:6px"><b style="color:var(--app-fg)">Сводка</b><span>всё время</span></div>
+  scr:appTop('Дашборд')+sbBody(`<div class="mcard" style="padding:9px"><div class="mhead" style="margin-bottom:6px"><b style="color:var(--app-fg)">Сводка</b><span>всё время</span></div>
    <div style="display:flex;justify-content:space-between;font-size:9px;padding:2px 0"><span style="color:var(--app-muted)">Сдано</span><b>17 / 23</b></div>
    <div style="display:flex;justify-content:space-between;font-size:9px;padding:2px 0"><span style="color:var(--app-muted)">Средний балл</span><b>79.8</b></div>
    <div style="display:flex;justify-content:space-between;font-size:9px;padding:2px 0"><span style="color:var(--warn)">С уходами</span><b style="color:var(--warn)">6 ⚠</b></div></div>
@@ -405,6 +408,7 @@ window.addEventListener('hashchange',()=>{ if(applyHash()) render(); });
 (function(){
   if(!applyHash()){ try{ const t=localStorage.getItem('subp_guide_track'); if(t==='examiner'||t==='candidate')track=t; }catch(e){} }
   render(false);
+})();
 })();
 </script>
 </html>
