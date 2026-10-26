@@ -1,5 +1,5 @@
 /* Service worker — офлайн-кэш тренажёра СУБП */
-const CACHE = 'subp-trainer-v31';   // = «Версия v31» в подвале index.html и data-version у feedback.js
+const CACHE = 'subp-trainer-v32';   // = «Версия v32» в подвале index.html и data-version у feedback.js
 const ASSETS = [
   './','./index.html','./styles.css','./questions.js','./license.js','./app.js','./feedback.js','./guide.html',
   './manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'
